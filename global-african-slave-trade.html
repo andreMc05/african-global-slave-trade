@@ -1,0 +1,2002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Global African Slave Trade — Interactive Atlas</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #05050a;
+      --panel-bg: rgba(8, 10, 20, 0.82);
+      --panel-border: rgba(0, 229, 255, 0.18);
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --accent-cyan: #00e5ff;
+      --accent-orange: #ff6b2b;
+      --accent-purple: #c084fc;
+      --accent-gold: #fbbf24;
+      --accent-green: #34d399;
+      --accent-red: #f87171;
+      --glow: 0 0 12px rgba(0, 229, 255, 0.35);
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    }
+
+    #globe-wrapper {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+    }
+
+    #globe-wrapper canvas {
+      display: block;
+    }
+
+    .ui-panel {
+      position: fixed;
+      z-index: 10;
+      width: min(320px, calc(100vw - 32px));
+      max-height: calc(100vh - 140px);
+      overflow-y: auto;
+      padding: 1.25rem 1.35rem;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 10px;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), var(--glow);
+    }
+
+    .ui-panel.left {
+      top: 20px;
+      left: 20px;
+    }
+
+    .ui-panel.right {
+      top: 20px;
+      right: 20px;
+      max-height: calc(100vh - 300px);
+    }
+
+    .ui-panel h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--accent-cyan);
+      text-shadow: 0 0 18px rgba(0, 229, 255, 0.55);
+      margin-bottom: 0.45rem;
+      line-height: 1.3;
+    }
+
+    .ui-panel .subtitle {
+      font-size: 0.78rem;
+      line-height: 1.55;
+      color: var(--text-muted);
+      margin-bottom: 1.25rem;
+      border-bottom: 1px solid rgba(71, 85, 105, 0.45);
+      padding-bottom: 0.85rem;
+    }
+
+    .legend-block {
+      margin-bottom: 1.15rem;
+    }
+
+    .legend-block:last-child {
+      margin-bottom: 0;
+    }
+
+    .legend-block h2 {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 0.65rem;
+    }
+
+    [data-tooltip] {
+      cursor: help;
+    }
+
+    .context-list li[data-loc] {
+      cursor: pointer;
+    }
+
+    .context-list li[data-loc]:hover {
+      background: rgba(0, 229, 255, 0.08);
+    }
+
+    .context-list li.active {
+      background: rgba(0, 229, 255, 0.18);
+      box-shadow: inset 0 0 0 1px rgba(0, 229, 255, 0.35);
+    }
+
+    #selection-stats {
+      display: none;
+      position: fixed;
+      z-index: 11;
+      right: 20px;
+      bottom: 118px;
+      width: min(320px, calc(100vw - 32px));
+      padding: 0.85rem 0.9rem;
+      background: var(--panel-bg);
+      border: 1px solid rgba(0, 229, 255, 0.25);
+      border-radius: 10px;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), 0 0 16px rgba(0, 229, 255, 0.12);
+      max-height: min(240px, calc(100vh - 280px));
+      overflow-y: auto;
+    }
+
+    #selection-stats.visible {
+      display: block;
+    }
+
+    #selection-stats h3 {
+      font-size: 0.62rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent-cyan);
+      margin-bottom: 0.35rem;
+    }
+
+    #stats-title {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.4rem;
+      line-height: 1.35;
+    }
+
+    #stats-description {
+      font-size: 0.72rem;
+      line-height: 1.5;
+      color: var(--text-muted);
+      margin-bottom: 0.55rem;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 0.75rem;
+      font-size: 0.78rem;
+      padding: 0.35rem 0;
+      border-bottom: 1px solid rgba(71, 85, 105, 0.35);
+    }
+
+    .stat-row:last-of-type {
+      border-bottom: none;
+    }
+
+    .stat-row.hidden {
+      display: none;
+    }
+
+    .stat-label {
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .stat-value {
+      font-weight: 700;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stat-value.export {
+      color: var(--accent-orange);
+      text-shadow: 0 0 10px rgba(255, 107, 43, 0.35);
+    }
+
+    .stat-value.import {
+      color: var(--accent-purple);
+      text-shadow: 0 0 10px rgba(192, 132, 252, 0.35);
+    }
+
+    #stats-period {
+      margin-top: 0.55rem;
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    #influence-stats {
+      display: none;
+      margin-top: 0.65rem;
+      padding-top: 0.65rem;
+      border-top: 1px solid rgba(71, 85, 105, 0.45);
+    }
+
+    #influence-stats.visible {
+      display: block;
+    }
+
+    #influence-stats-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.45rem;
+      line-height: 1.35;
+    }
+
+    #influence-stats-period {
+      margin-top: 0.45rem;
+      font-size: 0.62rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .sources-list {
+      list-style: none;
+      margin-top: 0;
+    }
+
+    .sources-list li {
+      margin-bottom: 0.4rem;
+      font-size: 0.72rem;
+      line-height: 1.45;
+    }
+
+    .sources-list a {
+      color: var(--accent-cyan);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(0, 229, 255, 0.25);
+      transition: color 0.15s ease, border-color 0.15s ease, text-shadow 0.15s ease;
+    }
+
+    .sources-list a:hover,
+    .sources-list a:focus-visible {
+      color: #fff;
+      border-bottom-color: var(--accent-cyan);
+      text-shadow: 0 0 8px rgba(0, 229, 255, 0.45);
+      outline: none;
+    }
+
+    .sources-note {
+      margin-top: 0.55rem;
+      font-size: 0.62rem;
+      line-height: 1.45;
+      color: var(--text-muted);
+    }
+
+    #sources-panel {
+      position: fixed;
+      z-index: 11;
+      left: 20px;
+      bottom: 118px;
+      width: min(320px, calc(100vw - 32px));
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 10px;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), var(--glow);
+    }
+
+    #sources-panel summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      list-style: none;
+      cursor: pointer;
+      padding: 0.65rem 0.85rem;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      user-select: none;
+      transition: color 0.15s ease;
+    }
+
+    #sources-panel summary::-webkit-details-marker {
+      display: none;
+    }
+
+    #sources-panel summary::after {
+      content: '+';
+      flex-shrink: 0;
+      font-size: 0.95rem;
+      font-weight: 400;
+      line-height: 1;
+      color: var(--accent-cyan);
+      text-shadow: 0 0 8px rgba(0, 229, 255, 0.45);
+      transition: transform 0.2s ease;
+    }
+
+    #sources-panel[open] summary {
+      color: var(--accent-cyan);
+      border-bottom: 1px solid rgba(71, 85, 105, 0.45);
+    }
+
+    #sources-panel[open] summary::after {
+      content: '−';
+    }
+
+    #sources-panel summary:hover,
+    #sources-panel summary:focus-visible {
+      color: var(--accent-cyan);
+      outline: none;
+    }
+
+    .sources-panel-body {
+      padding: 0.65rem 0.85rem 0.85rem;
+      max-height: min(220px, 32vh);
+      overflow-y: auto;
+    }
+
+    #ui-tooltip {
+      position: fixed;
+      z-index: 1000;
+      max-width: min(280px, calc(100vw - 24px));
+      max-height: min(240px, calc(100vh - 160px));
+      overflow-y: auto;
+      padding: 0.55rem 0.7rem;
+      font-size: 0.72rem;
+      font-weight: 400;
+      line-height: 1.45;
+      color: var(--text);
+      background: rgba(10, 14, 28, 0.96);
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6), var(--glow);
+      pointer-events: none;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.15s ease, visibility 0.15s ease;
+    }
+
+    #ui-tooltip.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      font-size: 0.8rem;
+      margin-bottom: 0.4rem;
+      color: var(--text);
+    }
+
+    .legend-item.influence-item {
+      cursor: pointer;
+      padding: 0.3rem 0.4rem;
+      margin-left: -0.4rem;
+      border-radius: 4px;
+      transition: background 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .legend-item.influence-item:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .legend-item.influence-item.active {
+      background: rgba(0, 229, 255, 0.12);
+      box-shadow: inset 0 0 0 1px rgba(0, 229, 255, 0.35);
+    }
+
+    .legend-dot {
+      flex-shrink: 0;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      box-shadow: 0 0 8px currentColor;
+    }
+
+    .ui-panel.right h2 {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent-cyan);
+      margin-bottom: 0.55rem;
+      text-shadow: 0 0 10px rgba(0, 229, 255, 0.35);
+    }
+
+    .ui-panel.right h2:not(:first-of-type) {
+      margin-top: 1rem;
+    }
+
+    .context-list {
+      list-style: none;
+    }
+
+    .context-list li {
+      font-size: 0.82rem;
+      padding: 0.45rem 0.55rem 0.45rem 0.75rem;
+      margin-bottom: 0.35rem;
+      background: rgba(15, 23, 42, 0.55);
+      border-radius: 4px;
+      border-left: 3px solid var(--accent-cyan);
+      transition: background 0.2s ease;
+    }
+
+    .context-list li:nth-child(3n+2) { border-left-color: var(--accent-orange); }
+    .context-list li:nth-child(3n+3) { border-left-color: var(--accent-purple); }
+
+    #timeline-container {
+      position: fixed;
+      z-index: 10;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(560px, calc(100vw - 40px));
+      padding: 1rem 1.35rem 1.15rem;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), var(--glow);
+      text-align: center;
+    }
+
+    #year-indicator {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--accent-cyan);
+      text-shadow:
+        0 0 8px rgba(0, 229, 255, 0.8),
+        0 0 22px rgba(0, 229, 255, 0.45),
+        0 0 40px rgba(0, 229, 255, 0.2);
+      margin-bottom: 0.75rem;
+      display: inline-block;
+    }
+
+    .timeline-track {
+      position: relative;
+      padding-top: 14px;
+    }
+
+    .timeline-ticks {
+      position: absolute;
+      top: 0;
+      left: 9px;
+      right: 9px;
+      height: 10px;
+      pointer-events: none;
+    }
+
+    .timeline-tick {
+      position: absolute;
+      top: 0;
+      transform: translateX(-50%);
+      width: 2px;
+      height: 8px;
+      background: rgba(148, 163, 184, 0.45);
+      border-radius: 1px;
+    }
+
+    .timeline-tick.mid-century {
+      height: 12px;
+      width: 3px;
+      background: var(--accent-cyan);
+      box-shadow: 0 0 8px rgba(0, 229, 255, 0.65);
+    }
+
+    .timeline-tick.minor {
+      height: 5px;
+      background: rgba(148, 163, 184, 0.28);
+    }
+
+    #timeline-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: linear-gradient(
+        90deg,
+        rgba(0, 229, 255, 0.15) 0%,
+        rgba(255, 107, 43, 0.35) 50%,
+        rgba(192, 132, 252, 0.35) 100%
+      );
+      outline: none;
+      cursor: pointer;
+    }
+
+    #timeline-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--accent-cyan);
+      border: 2px solid #fff;
+      box-shadow: 0 0 12px rgba(0, 229, 255, 0.75);
+      cursor: pointer;
+    }
+
+    #timeline-slider::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--accent-cyan);
+      border: 2px solid #fff;
+      box-shadow: 0 0 12px rgba(0, 229, 255, 0.75);
+      cursor: pointer;
+    }
+
+    .timeline-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 0.45rem;
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+    }
+
+    #load-error {
+      display: none;
+      position: fixed;
+      z-index: 20;
+      bottom: 120px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 0.5rem 1rem;
+      background: rgba(127, 29, 29, 0.85);
+      border: 1px solid var(--accent-red);
+      border-radius: 6px;
+      font-size: 0.75rem;
+      color: #fecaca;
+    }
+
+    @media (max-width: 900px) {
+      .ui-panel {
+        width: calc(100vw - 24px);
+        max-height: none;
+        padding: 0.85rem 1rem;
+      }
+
+      .ui-panel.left {
+        top: 12px;
+        left: 12px;
+        right: 12px;
+        width: auto;
+      }
+
+      .ui-panel.right {
+        top: auto;
+        bottom: 145px;
+        right: 12px;
+        left: 12px;
+        width: auto;
+        max-height: 22vh;
+      }
+
+      #selection-stats {
+        right: 12px;
+        left: 12px;
+        width: auto;
+        bottom: 96px;
+        max-height: min(180px, 26vh);
+        z-index: 12;
+      }
+
+      #sources-panel {
+        left: 12px;
+        bottom: 96px;
+        width: min(280px, calc(50vw - 18px));
+      }
+
+      .ui-panel.left .subtitle {
+        display: none;
+      }
+
+      #timeline-container {
+        bottom: 12px;
+        width: calc(100vw - 24px);
+      }
+    }
+
+    @media (max-width: 480px) {
+      .ui-panel.right {
+        max-height: 22vh;
+      }
+
+      #year-indicator {
+        font-size: 1.1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="globe-wrapper"></div>
+
+  <aside class="ui-panel left">
+    <h1>Global African Slave Trade</h1>
+    <p class="subtitle">
+      An interactive cartographic atlas tracing forced migration corridors across Africa,
+      the Atlantic, the Sahara, and the Indian Ocean from the 15th through 19th centuries.
+    </p>
+
+    <div class="legend-block">
+      <h2 data-tooltip="Glowing arcs on the globe trace the major corridors through which enslaved Africans were forcibly transported. Line thickness, height, and animation speed reflect estimated trade volume for the selected period.">Forced Migration Routes</h2>
+      <div class="legend-item" data-tooltip="Routes crossing the Atlantic Ocean from West and Central African ports to the Americas and Caribbean — the largest forced migration in modern history, lasting from the 16th to 19th centuries.">
+        <span class="legend-dot" style="background:#ff6b2b;color:#ff6b2b"></span>
+        Trans-Atlantic
+      </div>
+      <div class="legend-item" data-tooltip="Overland and Mediterranean routes across the Sahara Desert, moving captives from sub-Saharan Africa to North African and Middle Eastern markets for over a millennium.">
+        <span class="legend-dot" style="background:#00e5ff;color:#00e5ff"></span>
+        Trans-Saharan
+      </div>
+      <div class="legend-item" data-tooltip="Maritime routes along the East African coast through the Indian Ocean and Red Sea to Arabia, Persia, and South Asia — a trade network active since antiquity.">
+        <span class="legend-dot" style="background:#c084fc;color:#c084fc"></span>
+        Indian Ocean / Red Sea
+      </div>
+    </div>
+
+    <div class="legend-block">
+      <h2 data-tooltip="The dominant religious and political forces shaping African societies during each era. Click an influence to highlight its geographic reach on the globe for the current year.">Dominant Geopolitical Influences</h2>
+      <div class="legend-item influence-item" data-influence="traditional" data-tooltip="Indigenous spiritual traditions — including Vodun, Orisha worship, Akan cosmology, and Central African belief systems — that persisted and adapted across the diaspora. Click to highlight heartlands on the map.">
+        <span class="legend-dot" style="background:#fbbf24;color:#fbbf24"></span>
+        Traditional African Religions
+      </div>
+      <div class="legend-item influence-item" data-influence="islamic" data-tooltip="Muslim states and empires such as Mali, Songhai, Bornu, and the Sokoto Caliphate that governed vast territories and participated in trans-Saharan trade networks. Click to highlight spheres of influence.">
+        <span class="legend-dot" style="background:#34d399;color:#34d399"></span>
+        Islamic Empires
+      </div>
+      <div class="legend-item influence-item" data-influence="colonial" data-tooltip="European colonial powers — Portugal, Britain, France, Spain, and the Netherlands — that established coastal forts, plantations, and legal frameworks driving the Atlantic slave trade. Click to highlight colonial footholds.">
+        <span class="legend-dot" style="background:#f87171;color:#f87171"></span>
+        Christian Colonial Powers
+      </div>
+      <div id="influence-stats" aria-live="polite">
+        <p id="influence-stats-title"></p>
+        <div id="influence-stats-export-row" class="stat-row hidden">
+          <span class="stat-label">Exported</span>
+          <span id="influence-stats-export" class="stat-value export"></span>
+        </div>
+        <div id="influence-stats-import-row" class="stat-row hidden">
+          <span class="stat-label">Imported</span>
+          <span id="influence-stats-import" class="stat-value import"></span>
+        </div>
+        <p id="influence-stats-period"></p>
+      </div>
+    </div>
+  </aside>
+
+  <details id="sources-panel">
+    <summary>Data Sources</summary>
+    <div class="sources-panel-body">
+      <ul class="sources-list">
+        <li>
+          <a href="https://www.slavevoyages.org/" target="_blank" rel="noopener noreferrer">SlaveVoyages — Trans-Atlantic Slave Trade Database</a>
+        </li>
+        <li>
+          <a href="https://www.unesco.org/en/routes-enslaved-peoples" target="_blank" rel="noopener noreferrer">UNESCO — The Slave Route Project</a>
+        </li>
+        <li>
+          <a href="https://www.nationalarchives.gov.uk/help-with-your-research/research-guides/slavery-or-slave-owners/" target="_blank" rel="noopener noreferrer">UK National Archives — Slavery &amp; Slave Owners</a>
+        </li>
+        <li>
+          <a href="https://www.nationalgeographic.com/history/article/how-slavery-helped-build-a-world-economy" target="_blank" rel="noopener noreferrer">National Geographic — Three Slave Trades</a>
+        </li>
+        <li>
+          <a href="https://www.naturalearthdata.com/" target="_blank" rel="noopener noreferrer">Natural Earth — Coastline &amp; Country Data</a>
+        </li>
+        <li>
+          <a href="https://github.com/topojson/world-atlas" target="_blank" rel="noopener noreferrer">world-atlas (TopoJSON) — Map Topology</a>
+        </li>
+        <li>
+          <a href="https://github.com/vasturiano/globe.gl" target="_blank" rel="noopener noreferrer">globe.gl — 3D Globe Visualization</a>
+        </li>
+      </ul>
+      <p class="sources-note">
+        Route volumes, regional timelines, and export/import estimates in this atlas are synthesized approximations informed by the sources above — not direct database extracts.
+      </p>
+    </div>
+  </details>
+
+  <aside class="ui-panel right">
+    <h2 data-tooltip="Kingdoms, empires, sultanates, and colonial territories active during the selected century. Click any entry to fly the globe to its location and highlight it on the map.">Active Regions &amp; Empires</h2>
+    <ul id="regions-list" class="context-list"></ul>
+    <h2 data-tooltip="Ethnic groups and cultural communities most deeply affected by or involved in forced migration during this period. Click any entry to fly the globe to its homeland and highlight it on the map.">Prominent Cultures &amp; Peoples</h2>
+    <ul id="cultures-list" class="context-list"></ul>
+  </aside>
+
+  <div id="selection-stats" aria-live="polite">
+    <h3>Enslaved People</h3>
+    <p id="stats-title"></p>
+    <p id="stats-description"></p>
+    <div id="stats-export-row" class="stat-row hidden">
+      <span class="stat-label">Exported</span>
+      <span id="stats-export" class="stat-value export"></span>
+    </div>
+    <div id="stats-import-row" class="stat-row hidden">
+      <span class="stat-label">Imported</span>
+      <span id="stats-import" class="stat-value import"></span>
+    </div>
+    <p id="stats-period"></p>
+  </div>
+
+  <div id="timeline-container">
+    <h1 id="year-indicator" data-tooltip="Scrub the timeline in 50-year steps (1400–1900 CE) to explore how migration routes, political powers, and affected cultures shifted across the era.">Year: 1400 CE</h1>
+    <div class="timeline-track">
+      <div class="timeline-ticks" aria-hidden="true">
+        <span class="timeline-tick" style="left:0%"></span>
+        <span class="timeline-tick minor" style="left:10%"></span>
+        <span class="timeline-tick" style="left:20%"></span>
+        <span class="timeline-tick minor" style="left:30%"></span>
+        <span class="timeline-tick" style="left:40%"></span>
+        <span class="timeline-tick mid-century" style="left:50%" title="1650 CE"></span>
+        <span class="timeline-tick" style="left:60%"></span>
+        <span class="timeline-tick minor" style="left:70%"></span>
+        <span class="timeline-tick" style="left:80%"></span>
+        <span class="timeline-tick minor" style="left:90%"></span>
+        <span class="timeline-tick" style="left:100%"></span>
+      </div>
+      <input type="range" id="timeline-slider" min="1400" max="1900" step="50" value="1400" />
+    </div>
+    <div class="timeline-labels">
+      <span>1400</span>
+      <span>1500</span>
+      <span>1600</span>
+      <span>1700</span>
+      <span>1800</span>
+      <span>1900</span>
+    </div>
+  </div>
+
+  <div id="load-error" role="alert">Unable to load map topology. Displaying routes only.</div>
+  <div id="ui-tooltip" role="tooltip" aria-hidden="true"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/globe.gl"></script>
+  <script src="https://unpkg.com/topojson-client@3"></script>
+  <script>
+    /* ── Route color constants (legend-aligned) ── */
+    const ROUTE_COLORS = {
+      transAtlantic: '#ff6b2b',
+      transSaharan: '#00e5ff',
+      indianOcean: '#c084fc'
+    };
+
+    const INFLUENCE_COLORS = {
+      traditional: '#fbbf24',
+      islamic: '#34d399',
+      colonial: '#f87171'
+    };
+
+    /* Geographic spheres of influence per century milestone */
+    const INFLUENCE_ZONES = {
+      1400: {
+        traditional: [
+          { lat: 7.48, lng: 4.56, label: 'Ife / Yoruba Heartland' },
+          { lat: 6.34, lng: 5.62, label: 'Benin Kingdom' },
+          { lat: -4.32, lng: 15.31, label: 'Kongo Basin' },
+          { lat: 6.69, lng: -1.62, label: 'Akan Forest States' },
+          { lat: -20.15, lng: 30.93, label: 'Great Zimbabwe' }
+        ],
+        islamic: [
+          { lat: 16.27, lng: -3.00, label: 'Mali Empire' },
+          { lat: 13.08, lng: 14.00, label: 'Kanem-Bornu' },
+          { lat: 12.00, lng: 8.52, label: 'Hausa City-States' },
+          { lat: -8.96, lng: 39.51, label: 'Kilwa Sultanate' }
+        ],
+        colonial: [
+          { lat: 14.72, lng: -17.47, label: 'Early Senegambia Contact' },
+          { lat: 28.40, lng: -16.25, label: 'Canary Islands (Staging)' }
+        ]
+      },
+      1500: {
+        traditional: [
+          { lat: 8.13, lng: 4.56, label: 'Oyo / Yoruba States' },
+          { lat: 6.34, lng: 5.62, label: 'Benin Kingdom' },
+          { lat: -4.32, lng: 15.31, label: 'Kingdom of Kongo' },
+          { lat: 6.69, lng: -1.62, label: 'Akan Polities' },
+          { lat: -5.00, lng: 25.00, label: 'Luba & Lunda Kingdoms' }
+        ],
+        islamic: [
+          { lat: 16.27, lng: -0.04, label: 'Songhai Empire' },
+          { lat: 13.08, lng: 14.00, label: 'Bornu Sultanate' },
+          { lat: 12.00, lng: 8.52, label: 'Hausa Trade Cities' },
+          { lat: -4.05, lng: 39.67, label: 'Swahili Coast Sultanates' }
+        ],
+        colonial: [
+          { lat: -8.84, lng: 13.23, label: 'Portuguese Luanda' },
+          { lat: 5.08, lng: -1.35, label: 'Elmina (Portuguese)' },
+          { lat: 0.34, lng: 6.73, label: 'São Tomé Plantations' },
+          { lat: -12.97, lng: -38.51, label: 'Colonial Brazil' }
+        ]
+      },
+      1600: {
+        traditional: [
+          { lat: 8.13, lng: 4.56, label: 'Oyo Empire' },
+          { lat: 6.37, lng: 2.42, label: 'Kingdom of Dahomey' },
+          { lat: 6.69, lng: -1.62, label: 'Ashanti (Rising)' },
+          { lat: 5.50, lng: 7.50, label: 'Igboland' },
+          { lat: -4.32, lng: 15.31, label: 'Kongo (Declining)' }
+        ],
+        islamic: [
+          { lat: 13.08, lng: 14.00, label: 'Bornu Sultanate' },
+          { lat: 12.00, lng: 8.52, label: 'Hausa-Fulani Cities' },
+          { lat: -4.05, lng: 39.67, label: 'Mombasa & Zanzibar' },
+          { lat: 11.55, lng: 43.15, label: 'Adal / Horn Trade' }
+        ],
+        colonial: [
+          { lat: 5.08, lng: -1.35, label: 'Dutch Gold Coast' },
+          { lat: -8.84, lng: 13.23, label: 'Portuguese Angola' },
+          { lat: -12.97, lng: -38.51, label: 'Brazil (Colonial)' },
+          { lat: 18.47, lng: -69.89, label: 'Caribbean Plantations' }
+        ]
+      },
+      1700: {
+        traditional: [
+          { lat: 6.37, lng: 2.42, label: 'Dahomey (Fon)' },
+          { lat: 6.69, lng: -1.62, label: 'Ashanti Empire' },
+          { lat: 8.13, lng: 4.56, label: 'Yoruba City-States' },
+          { lat: 5.50, lng: 7.50, label: 'Igbo Communities' },
+          { lat: -28.73, lng: 30.89, label: 'Nguni Peoples' }
+        ],
+        islamic: [
+          { lat: 13.08, lng: 5.52, label: 'Sokoto (Forming)' },
+          { lat: 12.00, lng: 8.52, label: 'Hausaland' },
+          { lat: 13.08, lng: 14.00, label: 'Bornu' },
+          { lat: 14.72, lng: -17.47, label: 'Senegambian Muslim States' }
+        ],
+        colonial: [
+          { lat: 5.56, lng: -0.20, label: 'British Gold Coast' },
+          { lat: 14.72, lng: -17.47, label: 'French Senegal' },
+          { lat: -12.97, lng: -38.51, label: 'Portuguese Brazil' },
+          { lat: 32.78, lng: -79.93, label: 'American South' }
+        ]
+      },
+      1800: {
+        traditional: [
+          { lat: 7.48, lng: 4.56, label: 'Yoruba Heartland' },
+          { lat: 5.50, lng: 7.50, label: 'Igboland' },
+          { lat: -28.73, lng: 30.89, label: 'Zulu Kingdom' },
+          { lat: -5.00, lng: 25.00, label: 'Central African Kingdoms' },
+          { lat: 6.37, lng: 2.42, label: 'Dahomey' }
+        ],
+        islamic: [
+          { lat: 13.08, lng: 5.52, label: 'Sokoto Caliphate' },
+          { lat: 12.00, lng: 8.52, label: 'Hausa-Fulani Emirates' },
+          { lat: 14.72, lng: -17.47, label: 'Tukulor & Senegambia' },
+          { lat: -6.16, lng: 39.20, label: 'Zanzibar Sultanate' }
+        ],
+        colonial: [
+          { lat: 6.45, lng: 3.40, label: 'British West Africa' },
+          { lat: 14.50, lng: -14.50, label: 'French West Africa' },
+          { lat: -25.97, lng: 32.57, label: 'Portuguese Mozambique' },
+          { lat: 32.78, lng: -79.93, label: 'United States (Slavery)' }
+        ]
+      },
+      1900: {
+        traditional: [
+          { lat: -5.00, lng: 25.00, label: 'Congo Basin Societies' },
+          { lat: -28.73, lng: 30.89, label: 'Zulu & Nguni' },
+          { lat: 7.48, lng: 4.56, label: 'Yoruba (Colonial Nigeria)' },
+          { lat: -3.50, lng: 29.50, label: 'Great Lakes Kingdoms' },
+          { lat: 10.00, lng: 1.00, label: 'Volta-Niger Interior' }
+        ],
+        islamic: [
+          { lat: 13.08, lng: 5.52, label: 'Sokoto Successor Emirates' },
+          { lat: 12.00, lng: 8.52, label: 'Northern Nigeria' },
+          { lat: 14.72, lng: -17.47, label: 'Senegambia' },
+          { lat: -6.16, lng: 39.20, label: 'East African Coast' }
+        ],
+        colonial: [
+          { lat: 6.00, lng: 1.00, label: 'European Colonial Africa' },
+          { lat: -4.32, lng: 15.31, label: 'Belgian Congo' },
+          { lat: 6.45, lng: 3.40, label: 'British Nigeria' },
+          { lat: 0.39, lng: 18.58, label: 'French Equatorial Africa' }
+        ]
+      }
+    };
+
+    const REGION_DESCRIPTIONS = {
+      'Mali Empire': 'West African empire founded by Sundiata Keita; controlled trans-Saharan gold and salt trade routes through Timbuktu.',
+      'Kanem-Bornu Sultanate': 'Long-lived Sahelian state around Lake Chad, a major hub in trans-Saharan commerce and Islamic scholarship.',
+      'Kingdom of Kongo': 'Central African kingdom with early diplomatic ties to Portugal; later devastated by the Atlantic slave trade.',
+      'Ife & Oyo Precursor States': 'Yoruba city-states in present-day Nigeria that formed the cultural and political foundations of the Oyo Empire.',
+      'Benin Kingdom': 'Powerful Edo state known for bronze artistry and control of coastal trade in the Bight of Benin.',
+      'Kilwa Sultanate': 'Swahili trading city-state on the East African coast, linking the interior to Indian Ocean networks.',
+      'Ethiopian Empire': 'Ancient Christian kingdom in the Horn of Africa, largely independent of Atlantic trade systems.',
+      'Songhai Empire': 'Successor to Mali centered on Gao; at its peak the largest state in West African history.',
+      'Portuguese Angola (Luanda)': 'Primary Portuguese colonial base in Central Africa and one of the largest embarkation points for the Americas.',
+      'Oyo Empire (Rising)': 'Expanding Yoruba cavalry empire that dominated much of southwestern Nigeria by the 17th century.',
+      'Kilwa & Mombasa Sultanates': 'Swahili coastal city-states serving as intermediaries in East African and Indian Ocean slave commerce.',
+      'Bornu Sultanate': 'Revived Kanem-Bornu state controlling Lake Chad basin trade routes into North Africa.',
+      'Oyo Empire': 'Major Yoruba empire whose military expansion and internal conflicts fed the Atlantic slave trade.',
+      'Kingdom of Dahomey': 'Fon kingdom that institutionalized warfare and trade with European merchants on the Slave Coast.',
+      'Ashanti Confederation (Rising)': 'Akan polity consolidating power over gold trade routes in present-day Ghana.',
+      'Portuguese Angola': 'Colonial territory exporting vast numbers of captives, especially to Brazil, through the port of Luanda.',
+      'Dutch Gold Coast': 'Dutch colonial enclave at Elmina competing with other European powers for West African trade.',
+      'Kongo Kingdom (Declining)': 'Central African kingdom weakened by civil war and Portuguese demand for enslaved labor.',
+      'Ashanti Empire': 'Powerful Akan empire controlling gold resources and resisting then negotiating with British colonialism.',
+      'Sokoto Caliphate (Forming)': 'Fulani-led Islamic state emerging across Hausaland through jihad and political consolidation.',
+      'British Gold Coast': 'British colonial territory on the Gulf of Guinea, center of palm oil and abolition-era commerce.',
+      'French Senegal': 'French base at Saint-Louis and Gorée Island, a key node in Senegambian trade networks.',
+      'Portuguese Brazil (Colonial)': 'Largest destination for enslaved Africans in the Americas, sustaining plantation economies.',
+      'Sokoto Caliphate': 'Vast Hausa-Fulani Islamic state governing much of northern Nigeria through emirate structures.',
+      'Zulu Kingdom (Rising)': 'Nguni kingdom under Shaka Zulu reshaping power dynamics in southern Africa.',
+      'British West Africa': 'Colony encompassing Sierra Leone, the Gold Coast, Gambia, and Nigeria under British administration.',
+      'French West Africa': 'Federation of French colonies spanning Senegal to Niger after the Berlin Conference partition.',
+      'Portuguese Mozambique': 'East African colony where captives were exported across the Indian Ocean to Brazil and Arabia.',
+      'United States (Slavery Era)': 'Independent nation where chattel slavery drove cotton and tobacco economies until 1865.',
+      'European Colonial Africa': 'Continent largely partitioned among European powers following the 1884–85 Berlin Conference.',
+      'Liberia (Independent)': 'Nation founded by formerly enslaved African Americans, independent since 1847.',
+      'Sokoto Successor Emirates': 'Emirates descended from the Sokoto Caliphate under British indirect rule in northern Nigeria.',
+      'Belgian Congo': 'Personal colony of Leopold II, site of brutal forced labor regimes in Central Africa.',
+      'British Nigeria (Forming)': 'Amalgamation of northern and southern protectorates into a single colonial territory in 1914.',
+      'French Equatorial Africa': 'French colonial federation covering Chad, Gabon, Congo, and Central African Republic.'
+    };
+
+    const CULTURE_DESCRIPTIONS = {
+      'Mandinka': 'Mandé-speaking people of the Senegambia and Mali heartland, traders and scholars along trans-Saharan routes.',
+      'Hausa': 'Major ethnic group of northern Nigeria and Niger, central to Sahelian commerce and Islamic urban culture.',
+      'Yoruba': 'Large West African ethnic group whose kingdoms, art, and Orisha religion spread across the diaspora.',
+      'Swahili': 'Coastal East African people blending Bantu, Arab, and Persian influences through Indian Ocean trade.',
+      'Kongo Peoples': 'Bantu-speaking communities of the Congo basin with rich artistic and spiritual traditions.',
+      'Akan': 'Gold Coast peoples including Ashanti and Fante, renowned for kente cloth and matrilineal governance.',
+      'Kanuri': 'People of the Lake Chad region, historically linked to the Kanem-Bornu state and trans-Saharan trade.',
+      'Edo': 'Ethnic group of the Benin Kingdom, celebrated for bronze casting and royal court culture.',
+      'Kongo': 'Central African Bantu people whose kingdom engaged early with Portuguese missionaries and traders.',
+      'Mbundu': 'People of the Luanda hinterland in Angola, heavily targeted during the peak of the Atlantic trade.',
+      'Fulani': 'Pastoral people spread across the Sahel; led Islamic reform movements and the Sokoto Caliphate.',
+      'Fon': 'Ethnic group of Dahomey (Benin) whose kingdom became a major supplier to European slave traders.',
+      'Igbo': 'Southeastern Nigerian people whose communities were deeply affected by the Bight of Biafra trade.',
+      'Hausa-Fulani': 'Merged Hausa urban culture with Fulani pastoral and Islamic leadership in northern Nigeria.',
+      'Wolof': 'Senegambian people whose kingdoms and language group were central to early Atlantic commerce.',
+      'Zulu': 'Nguni people of southern Africa who built a powerful military kingdom in the early 19th century.'
+    };
+
+    function geo(lat, lng, color) {
+      return { lat: lat, lng: lng, color: color || '#00e5ff' };
+    }
+
+    const ENTITY_LOCATIONS = {
+      'Mali Empire': geo(16.27, -3.00, '#34d399'),
+      'Kanem-Bornu Sultanate': geo(13.08, 14.00, '#34d399'),
+      'Kingdom of Kongo': geo(-4.32, 15.31, '#fbbf24'),
+      'Ife & Oyo Precursor States': geo(7.48, 4.56, '#fbbf24'),
+      'Benin Kingdom': geo(6.34, 5.62, '#fbbf24'),
+      'Kilwa Sultanate': geo(-8.96, 39.51, '#c084fc'),
+      'Ethiopian Empire': geo(9.03, 38.74, '#f87171'),
+      'Songhai Empire': geo(16.27, -0.04, '#34d399'),
+      'Portuguese Angola (Luanda)': geo(-8.84, 13.23, '#f87171'),
+      'Oyo Empire (Rising)': geo(8.13, 4.56, '#fbbf24'),
+      'Kilwa & Mombasa Sultanates': geo(-4.05, 39.67, '#c084fc'),
+      'Bornu Sultanate': geo(13.08, 14.00, '#34d399'),
+      'Oyo Empire': geo(8.13, 4.56, '#fbbf24'),
+      'Kingdom of Dahomey': geo(6.37, 2.42, '#fbbf24'),
+      'Ashanti Confederation (Rising)': geo(6.69, -1.62, '#fbbf24'),
+      'Portuguese Angola': geo(-8.84, 13.23, '#f87171'),
+      'Dutch Gold Coast': geo(5.08, -1.35, '#f87171'),
+      'Kongo Kingdom (Declining)': geo(-4.32, 15.31, '#fbbf24'),
+      'Ashanti Empire': geo(6.69, -1.62, '#fbbf24'),
+      'Sokoto Caliphate (Forming)': geo(13.08, 5.52, '#34d399'),
+      'British Gold Coast': geo(5.56, -0.20, '#f87171'),
+      'French Senegal': geo(14.72, -17.47, '#f87171'),
+      'Portuguese Brazil (Colonial)': geo(-12.97, -38.51, '#f87171'),
+      'Sokoto Caliphate': geo(13.08, 5.52, '#34d399'),
+      'Zulu Kingdom (Rising)': geo(-28.73, 30.89, '#fbbf24'),
+      'British West Africa': geo(6.45, 3.40, '#f87171'),
+      'French West Africa': geo(14.50, -14.50, '#f87171'),
+      'Portuguese Mozambique': geo(-25.97, 32.57, '#f87171'),
+      'United States (Slavery Era)': geo(32.78, -79.93, '#f87171'),
+      'European Colonial Africa': geo(6.00, 1.00, '#f87171'),
+      'Liberia (Independent)': geo(6.32, -10.80, '#f87171'),
+      'Sokoto Successor Emirates': geo(13.08, 5.52, '#34d399'),
+      'Belgian Congo': geo(-4.32, 15.31, '#f87171'),
+      'British Nigeria (Forming)': geo(6.45, 3.40, '#f87171'),
+      'French Equatorial Africa': geo(0.39, 18.58, '#f87171'),
+      'Mandinka': geo(13.44, -15.31, '#00e5ff'),
+      'Hausa': geo(12.00, 8.52, '#00e5ff'),
+      'Yoruba': geo(7.48, 4.56, '#00e5ff'),
+      'Swahili': geo(-6.16, 39.20, '#c084fc'),
+      'Kongo Peoples': geo(-4.32, 15.31, '#00e5ff'),
+      'Akan': geo(6.69, -1.62, '#00e5ff'),
+      'Kanuri': geo(13.08, 14.00, '#00e5ff'),
+      'Edo': geo(6.34, 5.62, '#00e5ff'),
+      'Kongo': geo(-4.32, 15.31, '#00e5ff'),
+      'Mbundu': geo(-8.84, 13.23, '#00e5ff'),
+      'Fulani': geo(10.00, 10.00, '#00e5ff'),
+      'Fon': geo(6.37, 2.42, '#00e5ff'),
+      'Igbo': geo(5.50, 7.50, '#00e5ff'),
+      'Hausa-Fulani': geo(12.00, 8.52, '#00e5ff'),
+      'Wolof': geo(14.72, -17.47, '#00e5ff'),
+      'Zulu': geo(-28.73, 30.89, '#00e5ff')
+    };
+
+    /* Estimated enslaved people moved per 50-yr window (scholarly approximations) */
+    function tradeStat(exported, imported) {
+      return { exported: exported, imported: imported };
+    }
+
+    const TRADE_STATS = {
+      'Mali Empire': { 1400: tradeStat(22000, null), 1500: tradeStat(14000, null), 1600: tradeStat(9000, null), 1700: tradeStat(6000, null), 1800: tradeStat(4000, null), 1900: tradeStat(2000, null) },
+      'Kanem-Bornu Sultanate': { 1400: tradeStat(35000, null), 1500: tradeStat(42000, null), 1600: tradeStat(48000, null), 1700: tradeStat(45000, null), 1800: tradeStat(38000, null), 1900: tradeStat(25000, null) },
+      'Kingdom of Kongo': { 1400: tradeStat(8000, null), 1500: tradeStat(45000, null), 1600: tradeStat(95000, null), 1700: tradeStat(72000, null), 1800: tradeStat(48000, null), 1900: tradeStat(35000, null) },
+      'Ife & Oyo Precursor States': { 1400: tradeStat(12000, null), 1500: tradeStat(28000, null), 1600: tradeStat(65000, null), 1700: tradeStat(88000, null), 1800: tradeStat(72000, null), 1900: tradeStat(45000, null) },
+      'Benin Kingdom': { 1400: tradeStat(15000, null), 1500: tradeStat(42000, null), 1600: tradeStat(78000, null), 1700: tradeStat(92000, null), 1800: tradeStat(65000, null), 1900: tradeStat(38000, null) },
+      'Kilwa Sultanate': { 1400: tradeStat(18000, null), 1500: tradeStat(32000, null), 1600: tradeStat(45000, null), 1700: tradeStat(52000, null), 1800: tradeStat(48000, null), 1900: tradeStat(35000, null) },
+      'Ethiopian Empire': { 1400: tradeStat(8000, null), 1500: tradeStat(12000, null), 1600: tradeStat(15000, null), 1700: tradeStat(18000, null), 1800: tradeStat(22000, null), 1900: tradeStat(25000, null) },
+      'Songhai Empire': { 1400: tradeStat(10000, null), 1500: tradeStat(38000, null), 1600: tradeStat(22000, null), 1700: tradeStat(15000, null), 1800: tradeStat(10000, null), 1900: tradeStat(8000, null) },
+      'Portuguese Angola (Luanda)': { 1400: tradeStat(5000, null), 1500: tradeStat(42000, null), 1600: tradeStat(125000, null), 1700: tradeStat(195000, null), 1800: tradeStat(210000, null), 1900: tradeStat(85000, null) },
+      'Oyo Empire (Rising)': { 1400: tradeStat(8000, null), 1500: tradeStat(35000, null), 1600: tradeStat(82000, null), 1700: tradeStat(95000, null), 1800: tradeStat(68000, null), 1900: tradeStat(42000, null) },
+      'Kilwa & Mombasa Sultanates': { 1400: tradeStat(12000, null), 1500: tradeStat(28000, null), 1600: tradeStat(42000, null), 1700: tradeStat(55000, null), 1800: tradeStat(62000, null), 1900: tradeStat(48000, null) },
+      'Bornu Sultanate': { 1400: tradeStat(28000, null), 1500: tradeStat(38000, null), 1600: tradeStat(45000, null), 1700: tradeStat(42000, null), 1800: tradeStat(35000, null), 1900: tradeStat(28000, null) },
+      'Oyo Empire': { 1400: tradeStat(8000, null), 1500: tradeStat(35000, null), 1600: tradeStat(82000, null), 1700: tradeStat(95000, null), 1800: tradeStat(68000, null), 1900: tradeStat(42000, null) },
+      'Kingdom of Dahomey': { 1400: tradeStat(5000, null), 1500: tradeStat(22000, null), 1600: tradeStat(55000, null), 1700: tradeStat(125000, null), 1800: tradeStat(98000, null), 1900: tradeStat(45000, null) },
+      'Ashanti Confederation (Rising)': { 1400: tradeStat(6000, null), 1500: tradeStat(18000, null), 1600: tradeStat(48000, null), 1700: tradeStat(72000, null), 1800: tradeStat(65000, null), 1900: tradeStat(38000, null) },
+      'Portuguese Angola': { 1400: tradeStat(5000, null), 1500: tradeStat(42000, null), 1600: tradeStat(125000, null), 1700: tradeStat(195000, null), 1800: tradeStat(210000, null), 1900: tradeStat(85000, null) },
+      'Dutch Gold Coast': { 1400: tradeStat(3000, null), 1500: tradeStat(28000, null), 1600: tradeStat(85000, null), 1700: tradeStat(72000, null), 1800: tradeStat(48000, null), 1900: tradeStat(22000, null) },
+      'Kongo Kingdom (Declining)': { 1400: tradeStat(8000, null), 1500: tradeStat(45000, null), 1600: tradeStat(95000, null), 1700: tradeStat(72000, null), 1800: tradeStat(48000, null), 1900: tradeStat(35000, null) },
+      'Ashanti Empire': { 1400: tradeStat(6000, null), 1500: tradeStat(18000, null), 1600: tradeStat(48000, null), 1700: tradeStat(72000, null), 1800: tradeStat(65000, null), 1900: tradeStat(38000, null) },
+      'Sokoto Caliphate (Forming)': { 1400: tradeStat(8000, null), 1500: tradeStat(15000, null), 1600: tradeStat(22000, null), 1700: tradeStat(42000, null), 1800: tradeStat(85000, null), 1900: tradeStat(65000, null) },
+      'British Gold Coast': { 1400: tradeStat(4000, null), 1500: tradeStat(32000, null), 1600: tradeStat(78000, null), 1700: tradeStat(95000, null), 1800: tradeStat(82000, null), 1900: tradeStat(55000, null) },
+      'French Senegal': { 1400: tradeStat(12000, null), 1500: tradeStat(48000, null), 1600: tradeStat(92000, null), 1700: tradeStat(105000, null), 1800: tradeStat(88000, null), 1900: tradeStat(52000, null) },
+      'Portuguese Brazil (Colonial)': { 1400: tradeStat(null, 8000), 1500: tradeStat(null, 85000), 1600: tradeStat(null, 285000), 1700: tradeStat(null, 520000), 1800: tradeStat(null, 480000), 1900: tradeStat(null, 185000) },
+      'Sokoto Caliphate': { 1400: tradeStat(8000, null), 1500: tradeStat(15000, null), 1600: tradeStat(22000, null), 1700: tradeStat(42000, null), 1800: tradeStat(85000, null), 1900: tradeStat(65000, null) },
+      'Zulu Kingdom (Rising)': { 1400: tradeStat(2000, null), 1500: tradeStat(5000, null), 1600: tradeStat(12000, null), 1700: tradeStat(28000, null), 1800: tradeStat(65000, null), 1900: tradeStat(42000, null) },
+      'British West Africa': { 1400: tradeStat(8000, null), 1500: tradeStat(42000, null), 1600: tradeStat(95000, null), 1700: tradeStat(125000, null), 1800: tradeStat(145000, null), 1900: tradeStat(98000, null) },
+      'French West Africa': { 1400: tradeStat(6000, null), 1500: tradeStat(35000, null), 1600: tradeStat(82000, null), 1700: tradeStat(98000, null), 1800: tradeStat(115000, null), 1900: tradeStat(88000, null) },
+      'Portuguese Mozambique': { 1400: tradeStat(15000, null), 1500: tradeStat(28000, null), 1600: tradeStat(45000, null), 1700: tradeStat(62000, null), 1800: tradeStat(95000, null), 1900: tradeStat(72000, null) },
+      'United States (Slavery Era)': { 1400: tradeStat(null, 2000), 1500: tradeStat(null, 12000), 1600: tradeStat(null, 85000), 1700: tradeStat(null, 195000), 1800: tradeStat(null, 285000), 1900: tradeStat(null, 95000) },
+      'European Colonial Africa': { 1400: tradeStat(25000, null), 1500: tradeStat(85000, null), 1600: tradeStat(195000, null), 1700: tradeStat(285000, null), 1800: tradeStat(320000, null), 1900: tradeStat(185000, null) },
+      'Liberia (Independent)': { 1400: tradeStat(null, null), 1500: tradeStat(null, null), 1600: tradeStat(null, null), 1700: tradeStat(null, null), 1800: tradeStat(null, 3500), 1900: tradeStat(null, 8000) },
+      'Sokoto Successor Emirates': { 1400: tradeStat(8000, null), 1500: tradeStat(15000, null), 1600: tradeStat(22000, null), 1700: tradeStat(42000, null), 1800: tradeStat(85000, null), 1900: tradeStat(65000, null) },
+      'Belgian Congo': { 1400: tradeStat(12000, null), 1500: tradeStat(28000, null), 1600: tradeStat(55000, null), 1700: tradeStat(82000, null), 1800: tradeStat(125000, null), 1900: tradeStat(195000, null) },
+      'British Nigeria (Forming)': { 1400: tradeStat(8000, null), 1500: tradeStat(42000, null), 1600: tradeStat(95000, null), 1700: tradeStat(125000, null), 1800: tradeStat(145000, null), 1900: tradeStat(98000, null) },
+      'French Equatorial Africa': { 1400: tradeStat(10000, null), 1500: tradeStat(32000, null), 1600: tradeStat(65000, null), 1700: tradeStat(88000, null), 1800: tradeStat(115000, null), 1900: tradeStat(92000, null) },
+      'Mandinka': { 1400: tradeStat(28000, null), 1500: tradeStat(52000, null), 1600: tradeStat(68000, null), 1700: tradeStat(72000, null), 1800: tradeStat(58000, null), 1900: tradeStat(42000, null) },
+      'Hausa': { 1400: tradeStat(22000, null), 1500: tradeStat(35000, null), 1600: tradeStat(48000, null), 1700: tradeStat(55000, null), 1800: tradeStat(72000, null), 1900: tradeStat(65000, null) },
+      'Yoruba': { 1400: tradeStat(12000, null), 1500: tradeStat(42000, null), 1600: tradeStat(95000, null), 1700: tradeStat(145000, null), 1800: tradeStat(125000, null), 1900: tradeStat(88000, null) },
+      'Swahili': { 1400: tradeStat(18000, null), 1500: tradeStat(32000, null), 1600: tradeStat(45000, null), 1700: tradeStat(55000, null), 1800: tradeStat(62000, null), 1900: tradeStat(48000, null) },
+      'Kongo Peoples': { 1400: tradeStat(8000, null), 1500: tradeStat(45000, null), 1600: tradeStat(95000, null), 1700: tradeStat(72000, null), 1800: tradeStat(48000, null), 1900: tradeStat(35000, null) },
+      'Akan': { 1400: tradeStat(8000, null), 1500: tradeStat(28000, null), 1600: tradeStat(72000, null), 1700: tradeStat(98000, null), 1800: tradeStat(85000, null), 1900: tradeStat(52000, null) },
+      'Kanuri': { 1400: tradeStat(32000, null), 1500: tradeStat(42000, null), 1600: tradeStat(48000, null), 1700: tradeStat(45000, null), 1800: tradeStat(38000, null), 1900: tradeStat(28000, null) },
+      'Edo': { 1400: tradeStat(15000, null), 1500: tradeStat(42000, null), 1600: tradeStat(78000, null), 1700: tradeStat(92000, null), 1800: tradeStat(65000, null), 1900: tradeStat(38000, null) },
+      'Kongo': { 1400: tradeStat(8000, null), 1500: tradeStat(45000, null), 1600: tradeStat(95000, null), 1700: tradeStat(72000, null), 1800: tradeStat(48000, null), 1900: tradeStat(35000, null) },
+      'Mbundu': { 1400: tradeStat(4000, null), 1500: tradeStat(38000, null), 1600: tradeStat(115000, null), 1700: tradeStat(185000, null), 1800: tradeStat(195000, null), 1900: tradeStat(78000, null) },
+      'Fulani': { 1400: tradeStat(15000, null), 1500: tradeStat(28000, null), 1600: tradeStat(42000, null), 1700: tradeStat(55000, null), 1800: tradeStat(92000, null), 1900: tradeStat(72000, null) },
+      'Fon': { 1400: tradeStat(5000, null), 1500: tradeStat(22000, null), 1600: tradeStat(55000, null), 1700: tradeStat(125000, null), 1800: tradeStat(98000, null), 1900: tradeStat(45000, null) },
+      'Igbo': { 1400: tradeStat(8000, null), 1500: tradeStat(35000, null), 1600: tradeStat(82000, null), 1700: tradeStat(145000, null), 1800: tradeStat(125000, null), 1900: tradeStat(88000, null) },
+      'Hausa-Fulani': { 1400: tradeStat(18000, null), 1500: tradeStat(32000, null), 1600: tradeStat(48000, null), 1700: tradeStat(55000, null), 1800: tradeStat(82000, null), 1900: tradeStat(68000, null) },
+      'Wolof': { 1400: tradeStat(15000, null), 1500: tradeStat(48000, null), 1600: tradeStat(92000, null), 1700: tradeStat(105000, null), 1800: tradeStat(88000, null), 1900: tradeStat(52000, null) },
+      'Zulu': { 1400: tradeStat(2000, null), 1500: tradeStat(5000, null), 1600: tradeStat(12000, null), 1700: tradeStat(28000, null), 1800: tradeStat(65000, null), 1900: tradeStat(42000, null) }
+    };
+
+    const INFLUENCE_TRADE_STATS = {
+      1400: {
+        traditional: tradeStat(85000, null),
+        islamic: tradeStat(125000, null),
+        colonial: tradeStat(12000, 18000)
+      },
+      1500: {
+        traditional: tradeStat(145000, null),
+        islamic: tradeStat(165000, null),
+        colonial: tradeStat(95000, 185000)
+      },
+      1600: {
+        traditional: tradeStat(285000, null),
+        islamic: tradeStat(195000, null),
+        colonial: tradeStat(420000, 520000)
+      },
+      1700: {
+        traditional: tradeStat(485000, null),
+        islamic: tradeStat(220000, null),
+        colonial: tradeStat(620000, 890000)
+      },
+      1800: {
+        traditional: tradeStat(420000, null),
+        islamic: tradeStat(285000, null),
+        colonial: tradeStat(385000, 720000)
+      },
+      1900: {
+        traditional: tradeStat(185000, null),
+        islamic: tradeStat(195000, null),
+        colonial: tradeStat(145000, 285000)
+      }
+    };
+
+    const INFLUENCE_LABELS = {
+      traditional: 'Traditional African Religions',
+      islamic: 'Islamic Empires',
+      colonial: 'Christian Colonial Powers'
+    };
+
+    function lerpValue(a, b, t) {
+      if (a == null && b == null) return null;
+      if (a == null) return b;
+      if (b == null) return a;
+      return Math.round(a + (b - a) * t);
+    }
+
+    function resolveTradeStats(table, name, year) {
+      var row = table[name];
+      if (!row) return null;
+
+      var eraStart = Math.floor((year - 1400) / 100) * 100 + 1400;
+      var eraEnd = Math.min(eraStart + 100, 1900);
+      var start = row[eraStart];
+      var end = row[eraEnd];
+      if (!start && !end) return null;
+
+      var t = eraEnd === eraStart ? 0 : (year - eraStart) / (eraEnd - eraStart);
+      return {
+        exported: lerpValue(start ? start.exported : null, end ? end.exported : null, t),
+        imported: lerpValue(start ? start.imported : null, end ? end.imported : null, t)
+      };
+    }
+
+    function resolveInfluenceTradeStats(type, year) {
+      var eraStart = Math.floor((year - 1400) / 100) * 100 + 1400;
+      var eraEnd = Math.min(eraStart + 100, 1900);
+      var start = INFLUENCE_TRADE_STATS[eraStart] && INFLUENCE_TRADE_STATS[eraStart][type];
+      var end = INFLUENCE_TRADE_STATS[eraEnd] && INFLUENCE_TRADE_STATS[eraEnd][type];
+      if (!start && !end) return null;
+
+      var t = eraEnd === eraStart ? 0 : (year - eraStart) / (eraEnd - eraStart);
+      return {
+        exported: lerpValue(start ? start.exported : null, end ? end.exported : null, t),
+        imported: lerpValue(start ? start.imported : null, end ? end.imported : null, t)
+      };
+    }
+
+    /* ── Century milestone dataset (1400–1900 every 100 yrs) ── */
+    const CENTURY_DATA = {
+      1400: {
+        regions: [
+          'Mali Empire',
+          'Kanem-Bornu Sultanate',
+          'Kingdom of Kongo',
+          'Ife & Oyo Precursor States',
+          'Benin Kingdom',
+          'Kilwa Sultanate',
+          'Ethiopian Empire'
+        ],
+        cultures: [
+          'Mandinka',
+          'Hausa',
+          'Yoruba',
+          'Swahili',
+          'Kongo Peoples',
+          'Akan',
+          'Kanuri'
+        ],
+        routes: [
+          { startLat: 16.77, startLon: -3.00, endLat: 32.90, endLon: 13.18, color: ROUTE_COLORS.transSaharan },
+          { startLat: 16.27, startLon: -0.04, endLat: 30.04, endLon: 31.24, color: ROUTE_COLORS.transSaharan },
+          { startLat: 12.00, startLon: 8.52, endLat: 36.81, endLon: 10.18, color: ROUTE_COLORS.transSaharan },
+          { startLat: -8.96, startLon: 39.51, endLat: 23.59, endLon: 58.54, color: ROUTE_COLORS.indianOcean },
+          { startLat: -4.05, startLon: 39.67, endLat: 21.49, endLon: 39.19, color: ROUTE_COLORS.indianOcean },
+          { startLat: -6.16, startLon: 39.20, endLat: 30.51, endLon: 47.78, color: ROUTE_COLORS.indianOcean },
+          { startLat: 14.72, startLon: -17.47, endLat: 28.40, endLon: -16.25, color: ROUTE_COLORS.transAtlantic },
+          { startLat: 5.56, startLon: -0.20, endLat: 10.65, endLon: -61.52, color: ROUTE_COLORS.transAtlantic }
+        ]
+      },
+      1500: {
+        regions: [
+          'Songhai Empire',
+          'Kingdom of Kongo',
+          'Portuguese Angola (Luanda)',
+          'Benin Kingdom',
+          'Oyo Empire (Rising)',
+          'Ethiopian Empire',
+          'Kilwa & Mombasa Sultanates'
+        ],
+        cultures: [
+          'Mandinka',
+          'Yoruba',
+          'Edo',
+          'Kongo',
+          'Mbundu',
+          'Swahili',
+          'Fulani',
+          'Hausa'
+        ],
+        routes: [
+          { startLat: 16.27, startLon: -0.04, endLat: 32.90, endLon: 13.18, color: ROUTE_COLORS.transSaharan },
+          { startLat: 12.00, startLon: 8.52, endLat: 36.81, endLon: 10.18, color: ROUTE_COLORS.transSaharan },
+          { startLat: 14.72, startLon: -17.47, endLat: 13.19, endLon: -59.54, color: ROUTE_COLORS.transAtlantic },
+          { startLat: 5.56, startLon: -0.20, endLat: 18.00, endLon: -77.00, color: ROUTE_COLORS.transAtlantic },
+          { startLat: 6.45, startLon: 3.40, endLat: 23.11, endLon: -82.37, color: ROUTE_COLORS.transAtlantic },
+          { startLat: -8.84, startLon: 13.23, endLat: -12.97, endLon: -38.51, color: ROUTE_COLORS.transAtlantic },
+          { startLat: -4.05, startLon: 39.67, endLat: 21.49, endLon: 39.19, color: ROUTE_COLORS.indianOcean },
+          { startLat: -8.96, startLon: 39.51, endLat: 23.59, endLon: 58.54, color: ROUTE_COLORS.indianOcean },
+          { startLat: -25.97, startLon: 32.57, endLat: 15.30, endLon: 74.12, color: ROUTE_COLORS.indianOcean }
+        ]
+      },
+      1600: {
+        regions: [
+          'Bornu Sultanate',
+          'Oyo Empire',
+          'Kingdom of Dahomey',
+          'Ashanti Confederation (Rising)',
+          'Portuguese Angola',
+          'Dutch Gold Coast',
+          'Kongo Kingdom (Declining)'
+        ],
+        cultures: [
+          'Yoruba',
+          'Fon',
+          'Edo',
+          'Akan',
+          'Igbo',
+          'Mbundu',
+          'Mandinka',
+          'Hausa-Fulani'
+        ],
+        routes: [
+          { startLat: 14.72, startLon: -17.47, endLat: 13.19, endLon: -59.54, color: ROUTE_COLORS.transAtlantic },
+          { startLat: 5.56, startLon: -0.20, endLat: 18.00, endLon: -77.00, color: ROUTE_COLORS.transAtlantic },
+          { startLat: 6.45, startLon: 3.40, endLat: 23.11, endLon: -82.37, color: ROUTE_COLORS.transAtlantic },
+          { startLat: 4.05, startLon: 6.52, endLat: 18.47, endLon: -69.89, color: ROUTE_COLORS.transAtlantic },
+          { startLat: -8.84, startLon: 13.23, endLat: -12.97, endLon: -38.51, color: ROUTE_COLORS.transAtlantic },
+          { startLat: -4.32, startLon: 15.31, endLat: 19.00, endLon: -72.30, color: ROUTE_COLORS.transAtlantic },
+          { startLat: 16.27, startLon: -0.04, endLat: 30.04, endLon: 31.24, color: ROUTE_COLORS.transSaharan },
+          { startLat: 12.00, startLon: 8.52, endLat: 33.89, endLon: 35.51, color: ROUTE_COLORS.transSaharan },
+          { startLat: -6.16, startLon: 39.20, endLat: 12.79, endLon: 45.04, color: ROUTE_COLORS.indianOcean },
+          { startLat: -4.05, startLon: 39.67, endLat: 21.49, endLon: 39.19, color: ROUTE_COLORS.indianOcean }
+        ]
+      },
+      1700: {
+        regions: [
+          'Ashanti Empire',
+          'Kingdom of Dahomey',
+          'Oyo Empire',
+          'Sokoto Caliphate (Forming)',
+          'British Gold Coast',
+          'French Senegal',
+          'Portuguese Brazil (Colonial)'
+        ],
+        cultures: [
+          'Akan',
+          'Yoruba',
+          'Igbo',
+          'Fon',
+          'Hausa',
+          'Mandinka',
+          'Wolof',
+          'Mbundu'
+        ],
+        routes: [
+          { startLat: 14.72, startLon: -17.47, endLat: 13.19, endLon: -59.54, color: ROUTE_COLORS.transAtlantic },
+          { startLat: 5.56, startLon: -0.20, endLat: 18.00, endLon: -77.00, color: ROUTE_COLORS.transAtlantic },
+          { startLat: 6.45, startLon: 3.40, endLat: 23.11, endLon: -82.37, color: ROUTE_COLORS.transAtlantic },
+          { startLat: 4.05, startLon: 6.52, endLat: 18.47, endLon: -69.89, color: ROUTE_COLORS.transAtlantic },
+          { startLat: 7.95, startLon: -1.02, endLat: 10.65, endLon: -61.52, color: ROUTE_COLORS.transAtlantic },
+          { startLat: -8.84, startLon: 13.23, endLat: -12.97, endLon: -38.51, color: ROUTE_COLORS.transAtlantic },
+          { startLat: -4.32, startLon: 15.31, endLat: 19.00, endLon: -72.30, color: ROUTE_COLORS.transAtlantic },
+          { startLat: 6.37, startLon: 2.42, endLat: -3.72, endLon: -38.54, color: ROUTE_COLORS.transAtlantic },
+          { startLat: 12.00, startLon: 8.52, endLat: 36.81, endLon: 10.18, color: ROUTE_COLORS.transSaharan },
+          { startLat: 13.08, startLon: 5.52, endLat: 32.90, endLon: 13.18, color: ROUTE_COLORS.transSaharan },
+          { startLat: -6.16, startLon: 39.20, endLat: 21.49, endLon: 39.19, color: ROUTE_COLORS.indianOcean }
+        ]
+      },
+      1800: {
+        regions: [
+          'Sokoto Caliphate',
+          'Ashanti Empire',
+          'Zulu Kingdom (Rising)',
+          'British West Africa',
+          'French West Africa',
+          'Portuguese Mozambique',
+          'United States (Slavery Era)'
+        ],
+        cultures: [
+          'Fulani',
+          'Yoruba',
+          'Igbo',
+          'Akan',
+          'Mandinka',
+          'Swahili',
+          'Zulu',
+          'Hausa'
+        ],
+        routes: [
+          { startLat: 6.45, startLon: 3.40, endLat: 23.11, endLon: -82.37, color: ROUTE_COLORS.transAtlantic },
+          { startLat: 4.05, startLon: 6.52, endLat: 18.47, endLon: -69.89, color: ROUTE_COLORS.transAtlantic },
+          { startLat: 7.95, startLon: -1.02, endLat: 10.65, endLon: -61.52, color: ROUTE_COLORS.transAtlantic },
+          { startLat: -8.84, startLon: 13.23, endLat: -12.97, endLon: -38.51, color: ROUTE_COLORS.transAtlantic },
+          { startLat: 6.37, startLon: 2.42, endLat: -3.72, endLon: -38.54, color: ROUTE_COLORS.transAtlantic },
+          { startLat: 14.72, startLon: -17.47, endLat: 32.78, endLon: -79.93, color: ROUTE_COLORS.transAtlantic },
+          { startLat: 13.08, startLon: 5.52, endLat: 36.81, endLon: 10.18, color: ROUTE_COLORS.transSaharan },
+          { startLat: -6.16, startLon: 39.20, endLat: 21.49, endLon: 39.19, color: ROUTE_COLORS.indianOcean },
+          { startLat: -25.97, startLon: 32.57, endLat: 24.47, endLon: 54.37, color: ROUTE_COLORS.indianOcean },
+          { startLat: -15.42, startLon: 28.28, endLat: 12.79, endLon: 45.04, color: ROUTE_COLORS.indianOcean }
+        ]
+      },
+      1900: {
+        regions: [
+          'European Colonial Africa',
+          'Liberia (Independent)',
+          'Ethiopian Empire',
+          'Sokoto Successor Emirates',
+          'Belgian Congo',
+          'British Nigeria (Forming)',
+          'French Equatorial Africa'
+        ],
+        cultures: [
+          'Yoruba',
+          'Igbo',
+          'Akan',
+          'Mandinka',
+          'Fulani',
+          'Swahili',
+          'Kongo',
+          'Zulu'
+        ],
+        routes: [
+          { startLat: 6.45, startLon: 3.40, endLat: 23.11, endLon: -82.37, color: ROUTE_COLORS.transAtlantic },
+          { startLat: -8.84, startLon: 13.23, endLat: -12.97, endLon: -38.51, color: ROUTE_COLORS.transAtlantic },
+          { startLat: -6.16, startLon: 39.20, endLat: 21.49, endLon: 39.19, color: ROUTE_COLORS.indianOcean },
+          { startLat: 13.08, startLon: 5.52, endLat: 32.90, endLon: 13.18, color: ROUTE_COLORS.transSaharan },
+          { startLat: -4.32, startLon: 15.31, endLat: -22.91, endLon: -43.17, color: ROUTE_COLORS.transAtlantic },
+          { startLat: 7.95, startLon: -1.02, endLat: 6.80, endLon: -58.16, color: ROUTE_COLORS.transAtlantic }
+        ]
+      }
+    };
+
+    function mergeEras(earlier, later) {
+      var regions = earlier.regions.slice();
+      later.regions.forEach(function (r) {
+        if (regions.indexOf(r) === -1) regions.push(r);
+      });
+      var cultures = earlier.cultures.slice();
+      later.cultures.forEach(function (c) {
+        if (cultures.indexOf(c) === -1) cultures.push(c);
+      });
+      var routeKey = function (r) {
+        return r.startLat + ',' + r.startLon + ',' + r.endLat + ',' + r.endLon;
+      };
+      var routeMap = {};
+      earlier.routes.forEach(function (r) { routeMap[routeKey(r)] = r; });
+      later.routes.forEach(function (r) { routeMap[routeKey(r)] = r; });
+      return {
+        regions: regions.slice(0, 8),
+        cultures: cultures.slice(0, 8),
+        routes: Object.keys(routeMap).map(function (k) { return routeMap[k]; })
+      };
+    }
+
+    const HISTORICAL_DATA = {};
+    for (var y = 1400; y <= 1900; y += 50) {
+      if (CENTURY_DATA[y]) {
+        HISTORICAL_DATA[y] = CENTURY_DATA[y];
+      } else {
+        var base = Math.floor((y - 1400) / 100) * 100 + 1400;
+        HISTORICAL_DATA[y] = mergeEras(CENTURY_DATA[base], CENTURY_DATA[base + 100]);
+      }
+    }
+
+    const ROUTE_VOLUME_BASE = {
+      [ROUTE_COLORS.transAtlantic]: 95000,
+      [ROUTE_COLORS.transSaharan]: 38000,
+      [ROUTE_COLORS.indianOcean]: 22000
+    };
+
+    const ERA_VOLUME_SCALE = {
+      1400: 0.12,
+      1500: 0.34,
+      1600: 0.72,
+      1700: 1.0,
+      1800: 0.86,
+      1900: 0.2
+    };
+
+    function eraVolumeScale(year) {
+      var eraStart = Math.floor((year - 1400) / 100) * 100 + 1400;
+      var eraEnd = Math.min(eraStart + 100, 1900);
+      var startScale = ERA_VOLUME_SCALE[eraStart] != null ? ERA_VOLUME_SCALE[eraStart] : 0.5;
+      var endScale = ERA_VOLUME_SCALE[eraEnd] != null ? ERA_VOLUME_SCALE[eraEnd] : startScale;
+      if (eraEnd === eraStart) return startScale;
+      var t = (year - eraStart) / (eraEnd - eraStart);
+      return startScale + (endScale - startScale) * t;
+    }
+
+    function routeVolumeVariance(route, index) {
+      var seed = Math.abs(
+        route.startLat * 12.9898 + route.startLon * 78.233 +
+        route.endLat * 43.758 + route.endLon * 31.415 + index * 2.417
+      );
+      return 0.42 + (seed % 1000) / 1000 * 1.16;
+    }
+
+    function assignRouteVisualWeight(routes, year) {
+      if (!routes.length) return [];
+
+      var scale = eraVolumeScale(year);
+      var withVolume = routes.map(function (route, i) {
+        var base = ROUTE_VOLUME_BASE[route.color] || 30000;
+        var volume = Math.round(base * scale * routeVolumeVariance(route, i));
+        return Object.assign({}, route, { volume: volume });
+      });
+
+      var maxVol = 0;
+      withVolume.forEach(function (r) {
+        if (r.volume > maxVol) maxVol = r.volume;
+      });
+      if (maxVol <= 0) maxVol = 1;
+
+      return withVolume.map(function (route) {
+        var norm = route.volume / maxVol;
+        var weight = Math.sqrt(norm);
+        return Object.assign({}, route, {
+          stroke: 0.25 + weight * 2.0,
+          altitude: 0.1 + weight * 0.28,
+          dashTime: Math.round(2400 - weight * 1400),
+          dashLength: 0.22 + weight * 0.35
+        });
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const globeElement = document.getElementById('globe-wrapper');
+      const yearIndicator = document.getElementById('year-indicator');
+      const timelineSlider = document.getElementById('timeline-slider');
+      const regionsList = document.getElementById('regions-list');
+      const culturesList = document.getElementById('cultures-list');
+      const loadError = document.getElementById('load-error');
+      const uiTooltip = document.getElementById('ui-tooltip');
+      const selectionStats = document.getElementById('selection-stats');
+      const statsTitle = document.getElementById('stats-title');
+      const statsDescription = document.getElementById('stats-description');
+      const statsExportRow = document.getElementById('stats-export-row');
+      const statsImportRow = document.getElementById('stats-import-row');
+      const statsExport = document.getElementById('stats-export');
+      const statsImport = document.getElementById('stats-import');
+      const statsPeriod = document.getElementById('stats-period');
+      const influenceStats = document.getElementById('influence-stats');
+      const influenceStatsTitle = document.getElementById('influence-stats-title');
+      const influenceStatsExportRow = document.getElementById('influence-stats-export-row');
+      const influenceStatsImportRow = document.getElementById('influence-stats-import-row');
+      const influenceStatsExport = document.getElementById('influence-stats-export');
+      const influenceStatsImport = document.getElementById('influence-stats-import');
+      const influenceStatsPeriod = document.getElementById('influence-stats-period');
+
+      let world = null;
+      let activeListItem = null;
+      let activeInfluenceItem = null;
+
+      function formatStatCount(value) {
+        return '~' + value.toLocaleString('en-US');
+      }
+
+      function periodLabel(year) {
+        var endYear = Math.min(Number(year) + 50, 1900);
+        return year + '–' + endYear + ' CE';
+      }
+
+      function hideSelectionStats() {
+        selectionStats.classList.remove('visible');
+      }
+
+      function hideInfluenceStats() {
+        influenceStats.classList.remove('visible');
+      }
+
+      function renderStatsDisplay(opts, title, stats, year, description) {
+        var hasStats = stats && (stats.exported != null || stats.imported != null);
+        var hasDescription = Boolean(description);
+
+        if (!hasStats && !hasDescription) {
+          opts.panel.classList.remove('visible');
+          return;
+        }
+
+        opts.titleEl.textContent = title;
+
+        if (opts.descriptionEl) {
+          if (hasDescription) {
+            opts.descriptionEl.textContent = description;
+            opts.descriptionEl.style.display = 'block';
+          } else {
+            opts.descriptionEl.textContent = '';
+            opts.descriptionEl.style.display = 'none';
+          }
+        }
+
+        if (hasStats) {
+          if (stats.exported != null) {
+            opts.exportEl.textContent = formatStatCount(stats.exported);
+            opts.exportRow.classList.remove('hidden');
+          } else {
+            opts.exportRow.classList.add('hidden');
+          }
+
+          if (stats.imported != null) {
+            opts.importEl.textContent = formatStatCount(stats.imported);
+            opts.importRow.classList.remove('hidden');
+          } else {
+            opts.importRow.classList.add('hidden');
+          }
+
+          opts.periodEl.textContent =
+            'Estimated for ' + periodLabel(year) +
+            '. Figures are scholarly approximations of forced migration volume where applicable.';
+          opts.periodEl.style.display = 'block';
+        } else {
+          opts.exportRow.classList.add('hidden');
+          opts.importRow.classList.add('hidden');
+          opts.periodEl.style.display = 'none';
+        }
+
+        opts.panel.classList.add('visible');
+      }
+
+      function showSelectionStats(title, stats, year, description) {
+        hideInfluenceStats();
+        renderStatsDisplay({
+          panel: selectionStats,
+          titleEl: statsTitle,
+          descriptionEl: statsDescription,
+          exportRow: statsExportRow,
+          exportEl: statsExport,
+          importRow: statsImportRow,
+          importEl: statsImport,
+          periodEl: statsPeriod
+        }, title, stats, year, description);
+      }
+
+      function showInfluenceStats(title, stats, year) {
+        hideSelectionStats();
+        renderStatsDisplay({
+          panel: influenceStats,
+          titleEl: influenceStatsTitle,
+          exportRow: influenceStatsExportRow,
+          exportEl: influenceStatsExport,
+          importRow: influenceStatsImportRow,
+          importEl: influenceStatsImport,
+          periodEl: influenceStatsPeriod
+        }, title, stats, year);
+      }
+
+      function hexToRgb(hex) {
+        var c = hex.replace('#', '');
+        return {
+          r: parseInt(c.substring(0, 2), 16),
+          g: parseInt(c.substring(2, 4), 16),
+          b: parseInt(c.substring(4, 6), 16)
+        };
+      }
+
+      function resetRingStyle() {
+        if (!world) return;
+        world.ringColor(function () {
+          return function (t) { return 'rgba(0,229,255,' + (1 - t) + ')'; };
+        });
+        world.ringMaxRadius(4);
+      }
+
+      function setRingStyle(hexColor, maxRadius) {
+        if (!world) return;
+        var rgb = hexToRgb(hexColor);
+        world.ringColor(function () {
+          return function (t) {
+            return 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',' + (1 - t) + ')';
+          };
+        });
+        world.ringMaxRadius(maxRadius || 5);
+      }
+
+      function getInfluenceEraKey(year) {
+        return Math.min(1900, Math.max(1400, Math.floor((year - 1400) / 100) * 100 + 1400));
+      }
+
+      function zoneCentroid(zones) {
+        var lat = 0;
+        var lng = 0;
+        zones.forEach(function (z) { lat += z.lat; lng += z.lng; });
+        return { lat: lat / zones.length, lng: lng / zones.length };
+      }
+
+      function zoneAltitude(zones) {
+        var c = zoneCentroid(zones);
+        var maxDist = 0;
+        zones.forEach(function (z) {
+          var d = Math.sqrt(Math.pow(z.lat - c.lat, 2) + Math.pow(z.lng - c.lng, 2));
+          if (d > maxDist) maxDist = d;
+        });
+        return Math.min(2.8, Math.max(1.55, 1.9 + maxDist * 0.035));
+      }
+
+      function clearInfluenceHighlight() {
+        if (activeInfluenceItem) {
+          activeInfluenceItem.classList.remove('active');
+          activeInfluenceItem = null;
+        }
+        hideInfluenceStats();
+      }
+
+      function clearMapFocus() {
+        if (activeListItem) {
+          activeListItem.classList.remove('active');
+          activeListItem = null;
+        }
+        clearInfluenceHighlight();
+        hideSelectionStats();
+        if (world) {
+          world.pointsData([]);
+          world.ringsData([]);
+          world.labelsData([]);
+          resetRingStyle();
+        }
+      }
+
+      function highlightInfluence(type, legendEl) {
+        if (!world) return;
+
+        if (activeInfluenceItem === legendEl) {
+          clearMapFocus();
+          return;
+        }
+
+        var year = Number(timelineSlider.value);
+        var eraKey = getInfluenceEraKey(year);
+        var eraZones = INFLUENCE_ZONES[eraKey];
+        if (!eraZones || !eraZones[type]) return;
+
+        var zones = eraZones[type];
+        var color = INFLUENCE_COLORS[type];
+
+        if (activeListItem) {
+          activeListItem.classList.remove('active');
+          activeListItem = null;
+        }
+        clearInfluenceHighlight();
+        activeInfluenceItem = legendEl;
+        legendEl.classList.add('active');
+
+        var centroid = zoneCentroid(zones);
+        world.pointOfView({
+          lat: centroid.lat,
+          lng: centroid.lng,
+          altitude: zoneAltitude(zones)
+        }, 1400);
+
+        setRingStyle(color, 5.5);
+
+        world.pointsData(zones.map(function (z) {
+          return { lat: z.lat, lng: z.lng, color: color, size: 0.42, name: z.label };
+        }));
+
+        world.ringsData(zones.map(function (z) {
+          return { lat: z.lat, lng: z.lng };
+        }));
+
+        world.labelsData(zones.map(function (z) {
+          return { lat: z.lat, lng: z.lng, text: z.label, color: color };
+        }));
+
+        showInfluenceStats(
+          INFLUENCE_LABELS[type],
+          resolveInfluenceTradeStats(type, year),
+          year
+        );
+      }
+
+      function focusMapEntity(name, listItem) {
+        if (!world) return;
+
+        if (activeListItem === listItem) {
+          clearMapFocus();
+          return;
+        }
+
+        var loc = ENTITY_LOCATIONS[name];
+        if (!loc) return;
+
+        var year = Number(timelineSlider.value);
+
+        clearInfluenceHighlight();
+        if (activeListItem) activeListItem.classList.remove('active');
+        activeListItem = listItem;
+        listItem.classList.add('active');
+
+        resetRingStyle();
+        world.pointOfView({ lat: loc.lat, lng: loc.lng, altitude: 1.65 }, 1400);
+
+        world.pointsData([{
+          lat: loc.lat,
+          lng: loc.lng,
+          color: loc.color,
+          size: 0.55,
+          name: name
+        }]);
+
+        world.ringsData([{ lat: loc.lat, lng: loc.lng }]);
+
+        world.labelsData([{
+          lat: loc.lat,
+          lng: loc.lng,
+          text: name,
+          color: loc.color
+        }]);
+
+        showSelectionStats(
+          name,
+          resolveTradeStats(TRADE_STATS, name, year),
+          year,
+          CULTURE_DESCRIPTIONS[name] || REGION_DESCRIPTIONS[name] || ''
+        );
+      }
+
+      function bindTooltipEvents(root) {
+        root.querySelectorAll('[data-tooltip]').forEach(function (el) {
+          if (el.dataset.tipBound) return;
+          el.dataset.tipBound = '1';
+          el.addEventListener('mouseenter', showTooltip);
+          el.addEventListener('focus', showTooltip);
+          el.addEventListener('mouseleave', hideTooltip);
+          el.addEventListener('blur', hideTooltip);
+        });
+      }
+
+      function showTooltip(e) {
+        var el = e.currentTarget;
+        var text = el.getAttribute('data-tooltip');
+        if (!text) return;
+        uiTooltip.textContent = text;
+        uiTooltip.classList.add('visible');
+        uiTooltip.setAttribute('aria-hidden', 'false');
+        positionTooltip(el);
+      }
+
+      function hideTooltip() {
+        uiTooltip.classList.remove('visible');
+        uiTooltip.setAttribute('aria-hidden', 'true');
+      }
+
+      function positionTooltip(el) {
+        var rect = el.getBoundingClientRect();
+        var gap = 10;
+        var pad = 12;
+        var timelineEl = document.getElementById('timeline-container');
+        var timelineTop = timelineEl
+          ? timelineEl.getBoundingClientRect().top
+          : window.innerHeight - 120;
+        var bottomLimit = timelineTop - gap;
+        var inRightPanel = Boolean(el.closest('.ui-panel.right'));
+        var inLeftPanel = Boolean(el.closest('.ui-panel.left'));
+
+        uiTooltip.style.left = '-9999px';
+        uiTooltip.style.top = '0';
+        var tipW = uiTooltip.offsetWidth;
+        var tipH = uiTooltip.offsetHeight;
+
+        var left;
+        var top;
+
+        if (inRightPanel) {
+          left = rect.left - tipW - gap;
+          top = rect.top;
+          if (left < pad) {
+            left = Math.max(pad, rect.left);
+            top = rect.top - tipH - gap;
+            if (top < pad) top = rect.bottom + gap;
+          }
+        } else if (inLeftPanel) {
+          left = rect.left;
+          top = rect.bottom + gap;
+          if (top + tipH > bottomLimit) top = rect.top - tipH - gap;
+        } else {
+          left = rect.left;
+          top = rect.bottom + gap;
+          if (top + tipH > bottomLimit) top = rect.top - tipH - gap;
+        }
+
+        if (top + tipH > bottomLimit) top = bottomLimit - tipH;
+        if (top < pad) top = pad;
+
+        if (left + tipW > window.innerWidth - pad) {
+          left = window.innerWidth - tipW - pad;
+        }
+        if (left < pad) left = pad;
+
+        uiTooltip.style.left = left + 'px';
+        uiTooltip.style.top = top + 'px';
+      }
+
+      /* ── Core state synchronization ── */
+      function syncTimelineState(year) {
+        const era = HISTORICAL_DATA[year];
+        if (!era) return;
+
+        clearMapFocus();
+        yearIndicator.textContent = 'Year: ' + year + ' CE';
+
+        regionsList.replaceChildren();
+        culturesList.replaceChildren();
+
+        era.regions.forEach(function (name) {
+          const li = document.createElement('li');
+          li.textContent = name;
+          li.setAttribute('data-tooltip', REGION_DESCRIPTIONS[name] || 'A political entity active during this period of the African slave trade.');
+          li.setAttribute('data-loc', name);
+          li.setAttribute('tabindex', '0');
+          li.setAttribute('role', 'button');
+          li.addEventListener('click', function () { focusMapEntity(name, li); });
+          li.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              focusMapEntity(name, li);
+            }
+          });
+          regionsList.appendChild(li);
+        });
+
+        era.cultures.forEach(function (name) {
+          const li = document.createElement('li');
+          li.textContent = name;
+          li.setAttribute('data-tooltip', CULTURE_DESCRIPTIONS[name] || 'A cultural community affected by or involved in forced migration during this era.');
+          li.setAttribute('data-loc', name);
+          li.setAttribute('tabindex', '0');
+          li.setAttribute('role', 'button');
+          li.addEventListener('click', function () { focusMapEntity(name, li); });
+          li.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              focusMapEntity(name, li);
+            }
+          });
+          culturesList.appendChild(li);
+        });
+
+        bindTooltipEvents(regionsList);
+        bindTooltipEvents(culturesList);
+
+        if (world) {
+          world.arcsData(assignRouteVisualWeight(era.routes, year));
+        }
+      }
+
+      /* ── Load continental topology ── */
+      function applyPolygons(features) {
+        if (!world || !features || !features.length) return;
+        world.polygonsData(features);
+      }
+
+      function loadTopology() {
+        const primaryUrl = 'https://unpkg.com/world-atlas@2.0.2/countries-110m.json';
+        const fallbackUrl = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
+
+        fetch(primaryUrl)
+          .then(function (res) {
+            if (!res.ok) throw new Error('Primary TopoJSON CDN returned ' + res.status);
+            return res.json();
+          })
+          .then(function (topology) {
+            const countries = topojson.feature(topology, topology.objects.countries);
+            applyPolygons(countries.features);
+          })
+          .catch(function () {
+            return fetch(fallbackUrl)
+              .then(function (res) {
+                if (!res.ok) throw new Error('Fallback TopoJSON CDN returned ' + res.status);
+                return res.json();
+              })
+              .then(function (topology) {
+                const countries = topojson.feature(topology, topology.objects.countries);
+                applyPolygons(countries.features);
+              });
+          })
+          .catch(function () {
+            return fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson')
+              .then(function (res) {
+                if (!res.ok) throw new Error('Fallback GeoJSON returned ' + res.status);
+                return res.json();
+              })
+              .then(function (geo) {
+                applyPolygons(geo.features);
+              });
+          })
+          .catch(function (err) {
+            console.error('All topology sources failed:', err);
+            loadError.style.display = 'block';
+          });
+      }
+
+      /* ── Globe initialization ── */
+      try {
+        world = Globe()(globeElement)
+          .backgroundColor('#05050a')
+          .showAtmosphere(true)
+          .atmosphereColor('#00b4dc')
+          .atmosphereAltitude(0.18)
+          .polygonCapColor(function () { return 'rgba(30, 41, 59, 0.85)'; })
+          .polygonSideColor(function () { return 'rgba(15, 23, 42, 0.6)'; })
+          .polygonStrokeColor(function () { return '#475569'; })
+          .polygonAltitude(0.006)
+          .arcStartLat(function (d) { return d.startLat; })
+          .arcStartLng(function (d) { return d.startLon; })
+          .arcEndLat(function (d) { return d.endLat; })
+          .arcEndLng(function (d) { return d.endLon; })
+          .arcColor(function (d) { return d.color; })
+          .arcAltitude(function (d) { return d.altitude != null ? d.altitude : 0.22; })
+          .arcStroke(function (d) { return d.stroke != null ? d.stroke : 0.6; })
+          .arcDashLength(function (d) { return d.dashLength != null ? d.dashLength : 0.4; })
+          .arcDashGap(0.2)
+          .arcDashAnimateTime(function (d) { return d.dashTime != null ? d.dashTime : 1500; })
+          .arcsTransitionDuration(800)
+          .pointLat('lat')
+          .pointLng('lng')
+          .pointColor('color')
+          .pointRadius('size')
+          .pointAltitude(0.025)
+          .ringsData([])
+          .ringColor(function () { return function (t) { return 'rgba(0,229,255,' + (1 - t) + ')'; }; })
+          .ringMaxRadius(4)
+          .ringPropagationSpeed(2.5)
+          .ringRepeatPeriod(1400)
+          .labelLat('lat')
+          .labelLng('lng')
+          .labelText('text')
+          .labelColor('color')
+          .labelSize(0.45)
+          .labelDotRadius(0.4)
+          .labelDotOrientation(function () { return 'top'; })
+          .labelAltitude(0.03)
+          .labelsData([])
+          .width(window.innerWidth)
+          .height(window.innerHeight);
+
+        var globeMat = world.globeMaterial();
+        if (globeMat && globeMat.color) {
+          globeMat.color.set('#0a1628');
+          globeMat.emissive && globeMat.emissive.set('#050510');
+          globeMat.shininess = 8;
+        }
+
+        world.pointOfView({ lat: 5, lng: 12, altitude: 2.2 }, 0);
+        world.controls().autoRotate = false;
+
+        loadTopology();
+      } catch (err) {
+        console.error('Globe initialization failed:', err);
+        loadError.style.display = 'block';
+        loadError.textContent = 'Globe renderer failed to initialize.';
+      }
+
+      /* ── Timeline interaction ── */
+      timelineSlider.addEventListener('input', function () {
+        syncTimelineState(Number(timelineSlider.value));
+      });
+
+      window.addEventListener('resize', function () {
+        if (world) {
+          world.width(window.innerWidth).height(window.innerHeight);
+        }
+      });
+
+      bindTooltipEvents(document.body);
+
+      document.querySelectorAll('.influence-item').forEach(function (el) {
+        el.setAttribute('tabindex', '0');
+        el.setAttribute('role', 'button');
+        el.addEventListener('click', function () {
+          highlightInfluence(el.getAttribute('data-influence'), el);
+        });
+        el.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            highlightInfluence(el.getAttribute('data-influence'), el);
+          }
+        });
+      });
+
+      syncTimelineState(1400);
+    });
+  </script>
+</body>
+</html>
