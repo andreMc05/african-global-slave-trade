@@ -70,8 +70,7 @@
     .ui-panel h1 {
       font-size: 1.15rem;
       font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
+      letter-spacing: 0.02em;
       color: var(--accent-cyan);
       text-shadow: 0 0 18px rgba(0, 229, 255, 0.55);
       margin-bottom: 0.45rem;
@@ -93,6 +92,93 @@
 
     .legend-block:last-child {
       margin-bottom: 0;
+    }
+
+    .legend-block.hidden {
+      display: none;
+    }
+
+    .layer-toggle-block {
+      margin-bottom: 1.15rem;
+    }
+
+    .layer-toggle-block h2 {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 0.65rem;
+    }
+
+    .layer-toggle {
+      display: flex;
+      gap: 0;
+      padding: 3px;
+      background: rgba(15, 23, 42, 0.72);
+      border-radius: 999px;
+      border: 1px solid rgba(71, 85, 105, 0.45);
+    }
+
+    .layer-toggle-btn {
+      flex: 1;
+      padding: 0.48rem 0.45rem;
+      font-size: 0.6rem;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      border: none;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .layer-toggle-btn:hover:not(.active) {
+      color: var(--text);
+    }
+
+    .layer-toggle-btn.active {
+      background: #38bdf8;
+      color: #05050a;
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.55);
+    }
+
+    .left-panel-sources {
+      margin-top: 1rem;
+      padding-top: 0.85rem;
+      border-top: 1px solid rgba(71, 85, 105, 0.45);
+    }
+
+    .left-panel-sources h2 {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+
+    .left-panel-sources .sources-list {
+      list-style: disc;
+      padding-left: 1.1rem;
+    }
+
+    #nations-empty-notice {
+      display: none;
+      margin-top: 0.65rem;
+      padding: 0.55rem 0.65rem;
+      font-size: 0.72rem;
+      line-height: 1.45;
+      color: var(--text-muted);
+      background: rgba(56, 189, 248, 0.08);
+      border: 1px solid rgba(56, 189, 248, 0.22);
+      border-radius: 6px;
+    }
+
+    #nations-empty-notice.visible {
+      display: block;
     }
 
     .legend-block h2 {
@@ -273,6 +359,7 @@
     }
 
     #sources-panel {
+      display: none;
       position: fixed;
       z-index: 11;
       left: 20px;
@@ -621,41 +708,48 @@
 
   <div id="globe-wrapper"></div>
 
-  <aside class="ui-panel left">
+  <aside id="left-panel" class="ui-panel left">
     <h1>Global African Slave Trade</h1>
     <p class="subtitle">
-      An interactive cartographic atlas tracing forced migration corridors across Africa,
-      the Atlantic, the Sahara, and the Indian Ocean from the 15th through 19th centuries.
+      An interactive historical map tracking forced migration pathways, changing regional powers, and cultural identities.
     </p>
 
-    <div class="legend-block">
+    <div class="layer-toggle-block">
+      <h2>Visualization Layers</h2>
+      <div class="layer-toggle" role="group" aria-label="Visualization layer">
+        <button type="button" id="layer-btn-routes" class="layer-toggle-btn active" data-layer="routes">Migration Paths</button>
+        <button type="button" id="layer-btn-nations" class="layer-toggle-btn" data-layer="nations">Western Powers</button>
+      </div>
+    </div>
+
+    <div id="legend-routes" class="legend-block">
       <h2 data-tooltip="Glowing arcs on the globe trace the major corridors through which enslaved Africans were forcibly transported. Line thickness, height, and animation speed reflect estimated trade volume for the selected period.">Forced Migration Routes</h2>
       <div class="legend-item" data-tooltip="Routes crossing the Atlantic Ocean from West and Central African ports to the Americas and Caribbean — the largest forced migration in modern history, lasting from the 16th to 19th centuries.">
-        <span class="legend-dot" style="background:#ff6b2b;color:#ff6b2b"></span>
-        Trans-Atlantic
+        <span class="legend-dot" style="background:#c084fc;color:#c084fc"></span>
+        Trans-Atlantic Routes
       </div>
       <div class="legend-item" data-tooltip="Overland and Mediterranean routes across the Sahara Desert, moving captives from sub-Saharan Africa to North African and Middle Eastern markets for over a millennium.">
-        <span class="legend-dot" style="background:#00e5ff;color:#00e5ff"></span>
-        Trans-Saharan
+        <span class="legend-dot" style="background:#3b82f6;color:#3b82f6"></span>
+        Trans-Saharan Routes
       </div>
       <div class="legend-item" data-tooltip="Maritime routes along the East African coast through the Indian Ocean and Red Sea to Arabia, Persia, and South Asia — a trade network active since antiquity.">
-        <span class="legend-dot" style="background:#c084fc;color:#c084fc"></span>
+        <span class="legend-dot" style="background:#f87171;color:#f87171"></span>
         Indian Ocean / Red Sea
       </div>
     </div>
 
-    <div class="legend-block">
-      <h2 data-tooltip="The dominant religious and political forces shaping African societies during each era. Click an influence to highlight its geographic reach on the globe for the current year.">Dominant Geopolitical Influences</h2>
+    <div id="legend-influences" class="legend-block">
+      <h2 data-tooltip="The dominant religious and political forces shaping African societies during each era. Click an influence to highlight its geographic reach on the globe for the current year.">Dominant Influences</h2>
       <div class="legend-item influence-item" data-influence="traditional" data-tooltip="Indigenous spiritual traditions — including Vodun, Orisha worship, Akan cosmology, and Central African belief systems — that persisted and adapted across the diaspora. Click to highlight heartlands on the map.">
-        <span class="legend-dot" style="background:#fbbf24;color:#fbbf24"></span>
+        <span class="legend-dot" style="background:#34d399;color:#34d399"></span>
         Traditional African Religions
       </div>
       <div class="legend-item influence-item" data-influence="islamic" data-tooltip="Muslim states and empires such as Mali, Songhai, Bornu, and the Sokoto Caliphate that governed vast territories and participated in trans-Saharan trade networks. Click to highlight spheres of influence.">
-        <span class="legend-dot" style="background:#34d399;color:#34d399"></span>
+        <span class="legend-dot" style="background:#fbbf24;color:#fbbf24"></span>
         Islamic Empires
       </div>
       <div class="legend-item influence-item" data-influence="colonial" data-tooltip="European colonial powers — Portugal, Britain, France, Spain, and the Netherlands — that established coastal forts, plantations, and legal frameworks driving the Atlantic slave trade. Click to highlight colonial footholds.">
-        <span class="legend-dot" style="background:#f87171;color:#f87171"></span>
+        <span class="legend-dot" style="background:#38bdf8;color:#38bdf8"></span>
         Christian Colonial Powers
       </div>
       <div id="influence-stats" aria-live="polite">
@@ -670,6 +764,48 @@
         </div>
         <p id="influence-stats-period"></p>
       </div>
+    </div>
+
+    <div id="legend-nations" class="legend-block hidden">
+      <h2 data-tooltip="Fleet deployment trajectories from European capitals and American trade ports toward coastal African extraction zones, color-coded by imperial power.">Imperial Trading Flags</h2>
+      <div class="legend-item" data-tooltip="Portuguese maritime corridors from Lisbon and, later, autonomous Brazilian return fleets operating direct routes to West and Central Africa.">
+        <span class="legend-dot" style="background:#e11d48;color:#e11d48"></span>
+        Portugal / Brazil Fleet
+      </div>
+      <div class="legend-item" data-tooltip="British merchantmen sailing from London and Liverpool to the Gold Coast and Bight of Benin during peak Atlantic trade.">
+        <span class="legend-dot" style="background:#f59e0b;color:#f59e0b"></span>
+        Great Britain Merchantmen
+      </div>
+      <div class="legend-item" data-tooltip="French naval and merchant routes from Paris and Atlantic ports to Senegambia and the Bight of Benin.">
+        <span class="legend-dot" style="background:#3b82f6;color:#3b82f6"></span>
+        Kingdom of France
+      </div>
+      <div class="legend-item" data-tooltip="Spanish Empire asiento contracts linking Madrid and Seville to Caribbean ports and West-Central African supply zones.">
+        <span class="legend-dot" style="background:#10b981;color:#10b981"></span>
+        Spanish Empire / Asientos
+      </div>
+      <div class="legend-item" data-tooltip="United States fleet sectors from New England and mid-Atlantic ports to Senegambia and the Gold Coast, including post-1808 illicit traffic.">
+        <span class="legend-dot" style="background:#22d3ee;color:#22d3ee"></span>
+        United States Fleet Sector
+      </div>
+      <p id="nations-empty-notice">
+        No imperial fleet vectors are mapped for this period. Move the timeline to 1450 CE or later to view Western Power corridors.
+      </p>
+    </div>
+
+    <div class="left-panel-sources">
+      <h2>Data Sources:</h2>
+      <ul class="sources-list">
+        <li>
+          <a href="https://www.slavevoyages.org/" target="_blank" rel="noopener noreferrer">SlaveVoyages Database</a>
+        </li>
+        <li>
+          <a href="https://www.unesco.org/en/routes-enslaved-peoples" target="_blank" rel="noopener noreferrer">UNESCO Routes of Enslaved Peoples</a>
+        </li>
+        <li>
+          <a href="https://www.nationalgeographic.com/history/article/how-slavery-helped-build-a-world-economy" target="_blank" rel="noopener noreferrer">NatGeo Historical Reference</a>
+        </li>
+      </ul>
     </div>
   </aside>
 
@@ -766,6 +902,14 @@
       transAtlantic: '#ff6b2b',
       transSaharan: '#00e5ff',
       indianOcean: '#c084fc'
+    };
+
+    const NATION_COLORS = {
+      portugal: '#e11d48',
+      britain: '#f59e0b',
+      france: '#3b82f6',
+      spain: '#10b981',
+      usa: '#22d3ee'
     };
 
     const INFLUENCE_COLORS = {
@@ -1183,6 +1327,42 @@
           { startLat: -6.16, startLon: 39.20, endLat: 30.51, endLon: 47.78, color: ROUTE_COLORS.indianOcean },
           { startLat: 14.72, startLon: -17.47, endLat: 28.40, endLon: -16.25, color: ROUTE_COLORS.transAtlantic },
           { startLat: 5.56, startLon: -0.20, endLat: 10.65, endLon: -61.52, color: ROUTE_COLORS.transAtlantic }
+        ],
+        nations: []
+      },
+      1450: {
+        regions: [
+          'Mali Empire',
+          'Songhai (Rising)',
+          'Kanem-Bornu Sultanate',
+          'Kingdom of Kongo',
+          'Ife & Oyo Precursor States',
+          'Benin Kingdom',
+          'Kilwa Sultanate',
+          'Ethiopian Empire'
+        ],
+        cultures: [
+          'Mandinka',
+          'Hausa',
+          'Yoruba',
+          'Edo',
+          'Kongo Peoples',
+          'Swahili',
+          'Akan',
+          'Kanuri'
+        ],
+        routes: [
+          { startLat: 16.77, startLon: -3.00, endLat: 32.90, endLon: 13.18, color: ROUTE_COLORS.transSaharan },
+          { startLat: 16.27, startLon: -0.04, endLat: 30.04, endLon: 31.24, color: ROUTE_COLORS.transSaharan },
+          { startLat: 12.00, startLon: 8.52, endLat: 36.81, endLon: 10.18, color: ROUTE_COLORS.transSaharan },
+          { startLat: -8.96, startLon: 39.51, endLat: 23.59, endLon: 58.54, color: ROUTE_COLORS.indianOcean },
+          { startLat: -4.05, startLon: 39.67, endLat: 21.49, endLon: 39.19, color: ROUTE_COLORS.indianOcean },
+          { startLat: -6.16, startLon: 39.20, endLat: 30.51, endLon: 47.78, color: ROUTE_COLORS.indianOcean },
+          { startLat: 14.72, startLon: -17.47, endLat: 28.40, endLon: -16.25, color: ROUTE_COLORS.transAtlantic },
+          { startLat: 14.72, startLon: -17.47, endLat: 13.19, endLon: -59.54, color: ROUTE_COLORS.transAtlantic }
+        ],
+        nations: [
+          { startLat: 38.7, startLon: -9.1, endLat: 20.6, endLon: -16.5, color: NATION_COLORS.portugal }
         ]
       },
       1500: {
@@ -1215,6 +1395,10 @@
           { startLat: -4.05, startLon: 39.67, endLat: 21.49, endLon: 39.19, color: ROUTE_COLORS.indianOcean },
           { startLat: -8.96, startLon: 39.51, endLat: 23.59, endLon: 58.54, color: ROUTE_COLORS.indianOcean },
           { startLat: -25.97, startLon: 32.57, endLat: 15.30, endLon: 74.12, color: ROUTE_COLORS.indianOcean }
+        ],
+        nations: [
+          { startLat: 38.7, startLon: -9.1, endLat: 0.3, endLon: 6.7, color: NATION_COLORS.portugal },
+          { startLat: 40.4, startLon: -3.7, endLat: 18.4, endLon: -66.1, color: NATION_COLORS.spain }
         ]
       },
       1600: {
@@ -1248,6 +1432,14 @@
           { startLat: 12.00, startLon: 8.52, endLat: 33.89, endLon: 35.51, color: ROUTE_COLORS.transSaharan },
           { startLat: -6.16, startLon: 39.20, endLat: 12.79, endLon: 45.04, color: ROUTE_COLORS.indianOcean },
           { startLat: -4.05, startLon: 39.67, endLat: 21.49, endLon: 39.19, color: ROUTE_COLORS.indianOcean }
+        ],
+        nations: [
+          { startLat: 38.7, startLon: -9.1, endLat: -8.8, endLon: 13.2, color: NATION_COLORS.portugal },
+          { startLat: 38.7, startLon: -9.1, endLat: 5.08, endLon: -1.35, color: NATION_COLORS.portugal },
+          { startLat: 38.7, startLon: -9.1, endLat: 0.3, endLon: 6.7, color: NATION_COLORS.portugal },
+          { startLat: 40.4, startLon: -3.7, endLat: -8.8, endLon: 13.2, color: NATION_COLORS.spain },
+          { startLat: 40.4, startLon: -3.7, endLat: 18.4, endLon: -66.1, color: NATION_COLORS.spain },
+          { startLat: 40.4, startLon: -3.7, endLat: 18.47, endLon: -69.89, color: NATION_COLORS.spain }
         ]
       },
       1700: {
@@ -1282,6 +1474,17 @@
           { startLat: 12.00, startLon: 8.52, endLat: 36.81, endLon: 10.18, color: ROUTE_COLORS.transSaharan },
           { startLat: 13.08, startLon: 5.52, endLat: 32.90, endLon: 13.18, color: ROUTE_COLORS.transSaharan },
           { startLat: -6.16, startLon: 39.20, endLat: 21.49, endLon: 39.19, color: ROUTE_COLORS.indianOcean }
+        ],
+        nations: [
+          { startLat: 38.7, startLon: -9.1, endLat: -8.8, endLon: 13.2, color: NATION_COLORS.portugal },
+          { startLat: 38.7, startLon: -9.1, endLat: 5.56, endLon: -0.20, color: NATION_COLORS.portugal },
+          { startLat: -22.9, startLon: -43.2, endLat: 5.56, endLon: -0.20, color: NATION_COLORS.portugal },
+          { startLat: 51.5, startLon: -0.1, endLat: 5.56, endLon: -0.20, color: NATION_COLORS.britain },
+          { startLat: 51.5, startLon: -0.1, endLat: 4.05, endLon: 6.52, color: NATION_COLORS.britain },
+          { startLat: 48.8, startLon: 2.3, endLat: 6.37, endLon: 2.42, color: NATION_COLORS.france },
+          { startLat: 48.8, startLon: 2.3, endLat: 6.45, endLon: 3.40, color: NATION_COLORS.france },
+          { startLat: 40.4, startLon: -3.7, endLat: -8.8, endLon: 13.2, color: NATION_COLORS.spain },
+          { startLat: 42.7, startLon: -71.4, endLat: 14.72, endLon: -17.47, color: NATION_COLORS.usa }
         ]
       },
       1800: {
@@ -1315,6 +1518,14 @@
           { startLat: -6.16, startLon: 39.20, endLat: 21.49, endLon: 39.19, color: ROUTE_COLORS.indianOcean },
           { startLat: -25.97, startLon: 32.57, endLat: 24.47, endLon: 54.37, color: ROUTE_COLORS.indianOcean },
           { startLat: -15.42, startLon: 28.28, endLat: 12.79, endLon: 45.04, color: ROUTE_COLORS.indianOcean }
+        ],
+        nations: [
+          { startLat: -22.9, startLon: -43.2, endLat: 5.56, endLon: -0.20, color: NATION_COLORS.portugal },
+          { startLat: -22.9, startLon: -43.2, endLat: 14.72, endLon: -17.47, color: NATION_COLORS.portugal },
+          { startLat: 23.1, startLon: -82.4, endLat: 6.45, endLon: 3.40, color: NATION_COLORS.spain },
+          { startLat: 23.1, startLon: -82.4, endLat: 4.05, endLon: 6.52, color: NATION_COLORS.spain },
+          { startLat: 51.5, startLon: -0.1, endLat: 4.05, endLon: 6.52, color: NATION_COLORS.britain },
+          { startLat: 42.7, startLon: -71.4, endLat: 14.72, endLon: -17.47, color: NATION_COLORS.usa }
         ]
       },
       1900: {
@@ -1344,7 +1555,8 @@
           { startLat: 13.08, startLon: 5.52, endLat: 32.90, endLon: 13.18, color: ROUTE_COLORS.transSaharan },
           { startLat: -4.32, startLon: 15.31, endLat: -22.91, endLon: -43.17, color: ROUTE_COLORS.transAtlantic },
           { startLat: 7.95, startLon: -1.02, endLat: 6.80, endLon: -58.16, color: ROUTE_COLORS.transAtlantic }
-        ]
+        ],
+        nations: []
       }
     };
 
@@ -1363,10 +1575,17 @@
       var routeMap = {};
       earlier.routes.forEach(function (r) { routeMap[routeKey(r)] = r; });
       later.routes.forEach(function (r) { routeMap[routeKey(r)] = r; });
+      var nationKey = function (n) {
+        return n.startLat + ',' + n.startLon + ',' + n.endLat + ',' + n.endLon + ',' + n.color;
+      };
+      var nationMap = {};
+      (earlier.nations || []).forEach(function (n) { nationMap[nationKey(n)] = n; });
+      (later.nations || []).forEach(function (n) { nationMap[nationKey(n)] = n; });
       return {
         regions: regions.slice(0, 8),
         cultures: cultures.slice(0, 8),
-        routes: Object.keys(routeMap).map(function (k) { return routeMap[k]; })
+        routes: Object.keys(routeMap).map(function (k) { return routeMap[k]; }),
+        nations: Object.keys(nationMap).map(function (k) { return nationMap[k]; })
       };
     }
 
@@ -1383,7 +1602,12 @@
     const ROUTE_VOLUME_BASE = {
       [ROUTE_COLORS.transAtlantic]: 95000,
       [ROUTE_COLORS.transSaharan]: 38000,
-      [ROUTE_COLORS.indianOcean]: 22000
+      [ROUTE_COLORS.indianOcean]: 22000,
+      [NATION_COLORS.portugal]: 72000,
+      [NATION_COLORS.britain]: 88000,
+      [NATION_COLORS.france]: 65000,
+      [NATION_COLORS.spain]: 58000,
+      [NATION_COLORS.usa]: 42000
     };
 
     const ERA_VOLUME_SCALE = {
@@ -1464,10 +1688,17 @@
       const influenceStatsExport = document.getElementById('influence-stats-export');
       const influenceStatsImport = document.getElementById('influence-stats-import');
       const influenceStatsPeriod = document.getElementById('influence-stats-period');
+      const layerBtnRoutes = document.getElementById('layer-btn-routes');
+      const layerBtnNations = document.getElementById('layer-btn-nations');
+      const legendRoutes = document.getElementById('legend-routes');
+      const legendInfluences = document.getElementById('legend-influences');
+      const legendNations = document.getElementById('legend-nations');
+      const nationsEmptyNotice = document.getElementById('nations-empty-notice');
 
       let world = null;
       let activeListItem = null;
       let activeInfluenceItem = null;
+      let visualizationLayer = 'routes';
 
       function formatStatCount(value) {
         return '~' + value.toLocaleString('en-US');
@@ -1639,6 +1870,7 @@
 
         if (activeInfluenceItem === legendEl) {
           clearMapFocus();
+          applyGlobeArcLayer(getArcDataForYear(Number(timelineSlider.value)), Number(timelineSlider.value));
           return;
         }
 
@@ -1691,6 +1923,7 @@
 
         if (activeListItem === listItem) {
           clearMapFocus();
+          applyGlobeArcLayer(getArcDataForYear(Number(timelineSlider.value)), Number(timelineSlider.value));
           return;
         }
 
@@ -1808,7 +2041,74 @@
         uiTooltip.style.top = top + 'px';
       }
 
+      function getArcDataForYear(year, layer) {
+        var era = HISTORICAL_DATA[year];
+        if (!era) return [];
+        var activeLayer = layer || visualizationLayer;
+        return activeLayer === 'nations' ? (era.nations || []) : era.routes;
+      }
+
+      function updateNationsEmptyNotice(year) {
+        if (!nationsEmptyNotice) return;
+        var showNotice = visualizationLayer === 'nations' && getArcDataForYear(year, 'nations').length === 0;
+        nationsEmptyNotice.classList.toggle('visible', showNotice);
+      }
+
+      function resolveYearForNationsLayer(year) {
+        if (getArcDataForYear(year, 'nations').length) return year;
+
+        var y;
+        for (y = year + 50; y <= 1900; y += 50) {
+          if (getArcDataForYear(y, 'nations').length) return y;
+        }
+        for (y = year - 50; y >= 1400; y -= 50) {
+          if (getArcDataForYear(y, 'nations').length) return y;
+        }
+        return year;
+      }
+
+      function applyGlobeArcLayer(arcData, year, layer) {
+        if (!world) return;
+
+        var activeLayer = layer || visualizationLayer;
+        var weighted = assignRouteVisualWeight(arcData, year).map(function (arc, index) {
+          return Object.assign({}, arc, {
+            _layerStamp: activeLayer + ':' + year + ':' + index
+          });
+        });
+
+        updateNationsEmptyNotice(year);
+        world.arcsTransitionDuration(0);
+        world.arcsData([]);
+        world.arcsData(weighted);
+      }
+
       /* ── Core state synchronization ── */
+      function setVisualizationLayer(mode) {
+        var nextLayer = mode === 'nations' ? 'nations' : 'routes';
+        visualizationLayer = nextLayer;
+
+        layerBtnRoutes.classList.toggle('active', visualizationLayer === 'routes');
+        layerBtnNations.classList.toggle('active', visualizationLayer === 'nations');
+        legendRoutes.classList.toggle('hidden', visualizationLayer !== 'routes');
+        legendInfluences.classList.toggle('hidden', visualizationLayer !== 'routes');
+        legendNations.classList.toggle('hidden', visualizationLayer !== 'nations');
+
+        if (visualizationLayer !== 'nations' && nationsEmptyNotice) {
+          nationsEmptyNotice.classList.remove('visible');
+        }
+
+        var year = Number(timelineSlider.value);
+        if (visualizationLayer === 'nations') {
+          year = resolveYearForNationsLayer(year);
+          if (Number(timelineSlider.value) !== year) {
+            timelineSlider.value = String(year);
+          }
+        }
+
+        syncTimelineState(year);
+      }
+
       function syncTimelineState(year) {
         const era = HISTORICAL_DATA[year];
         if (!era) return;
@@ -1857,7 +2157,7 @@
         bindTooltipEvents(culturesList);
 
         if (world) {
-          world.arcsData(assignRouteVisualWeight(era.routes, year));
+          applyGlobeArcLayer(getArcDataForYear(year, visualizationLayer), year, visualizationLayer);
         }
       }
 
@@ -1971,6 +2271,14 @@
       /* ── Timeline interaction ── */
       timelineSlider.addEventListener('input', function () {
         syncTimelineState(Number(timelineSlider.value));
+      });
+
+      layerBtnRoutes.addEventListener('click', function () {
+        setVisualizationLayer('routes');
+      });
+
+      layerBtnNations.addEventListener('click', function () {
+        setVisualizationLayer('nations');
       });
 
       window.addEventListener('resize', function () {
