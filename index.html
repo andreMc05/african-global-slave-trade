@@ -12,7 +12,12 @@
   <div id="globe-wrapper"></div>
 
   <aside id="left-panel" class="ui-panel left">
-    <h1>Global African Slave Trade</h1>
+    <details class="panel-drawer">
+      <summary class="panel-drawer-summary">
+        <span class="panel-drawer-title">Global African Slave Trade</span>
+        <span class="panel-drawer-hint" aria-hidden="true">Legend &amp; layers</span>
+      </summary>
+      <div class="panel-drawer-body">
     <p class="subtitle">
       An interactive historical map tracking forced migration pathways, changing regional powers, and cultural identities.
     </p>
@@ -110,6 +115,8 @@
         </li>
       </ul>
     </div>
+      </div>
+    </details>
   </aside>
 
   <details id="sources-panel">
@@ -144,11 +151,19 @@
     </div>
   </details>
 
-  <aside class="ui-panel right">
+  <aside id="right-panel" class="ui-panel right">
+    <details class="panel-drawer">
+      <summary class="panel-drawer-summary">
+        <span class="panel-drawer-title">Regions &amp; Cultures</span>
+        <span class="panel-drawer-hint" aria-hidden="true">Tap to browse</span>
+      </summary>
+      <div class="panel-drawer-body">
     <h2 data-tooltip="Kingdoms, empires, sultanates, and colonial territories active during the selected century. Click any entry to fly the globe to its location and highlight it on the map.">Active Regions &amp; Empires</h2>
     <ul id="regions-list" class="context-list"></ul>
     <h2 data-tooltip="Ethnic groups and cultural communities most deeply affected by or involved in forced migration during this period. Click any entry to fly the globe to its homeland and highlight it on the map.">Prominent Cultures &amp; Peoples</h2>
     <ul id="cultures-list" class="context-list"></ul>
+      </div>
+    </details>
   </aside>
 
   <div id="selection-stats" aria-live="polite">
