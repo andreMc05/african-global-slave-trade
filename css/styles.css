@@ -241,7 +241,7 @@
       right: 20px;
       bottom: 118px;
       width: min(320px, calc(100vw - 32px));
-      padding: 0.85rem 0.9rem;
+      padding: 0.85rem 2rem 0.85rem 0.9rem;
       background: var(--panel-bg);
       border: 1px solid rgba(0, 229, 255, 0.25);
       border-radius: 10px;
@@ -250,6 +250,34 @@
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), 0 0 16px rgba(0, 229, 255, 0.12);
       max-height: min(240px, calc(100vh - 280px));
       overflow-y: auto;
+    }
+
+    .stats-close-btn {
+      position: absolute;
+      top: 0.35rem;
+      right: 0.35rem;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.35rem;
+      height: 1.35rem;
+      padding: 0;
+      border: none;
+      border-radius: 4px;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      line-height: 1;
+      cursor: pointer;
+      transition: color 0.15s ease, background 0.15s ease;
+    }
+
+    .stats-close-btn:hover,
+    .stats-close-btn:focus-visible {
+      color: var(--accent-cyan);
+      background: rgba(0, 229, 255, 0.1);
+      outline: none;
     }
 
     #selection-stats.visible {

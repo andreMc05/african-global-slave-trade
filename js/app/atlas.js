@@ -165,6 +165,17 @@ export function initAtlas() {
     }
   }
 
+  function dismissSelectionFocus() {
+    clearMapFocus();
+    if (world) {
+      applyGlobeArcLayer(
+        getArcDataForYear(Number(timelineSlider.value), visualizationLayer),
+        Number(timelineSlider.value),
+        visualizationLayer
+      );
+    }
+  }
+
   function highlightInfluence(type, legendEl) {
     if (!world) return;
 
@@ -360,6 +371,21 @@ export function initAtlas() {
   });
 
   tooltip.bindTooltipEvents(document.body);
+
+  const statsCloseBtn = document.getElementById('stats-close-btn');
+  if (statsCloseBtn) {
+    statsCloseBtn.addEventListener('click', dismissSelectionFocus);
+  }
+
+  const rightDrawer = document.querySelector('#right-panel .panel-drawer');
+  const mobileQuery = window.matchMedia('(max-width: 900px)');
+  if (rightDrawer) {
+    rightDrawer.addEventListener('toggle', function () {
+      if (mobileQuery.matches && !rightDrawer.open) {
+        dismissSelectionFocus();
+      }
+    });
+  }
 
   document.querySelectorAll('.influence-item').forEach(function (el) {
     el.setAttribute('tabindex', '0');
